@@ -1,0 +1,34 @@
+# Pipecat with NVIDIA Riva, WebRTC, and Silero VAD support
+# Install the local pipecat with all required extras
+-e ./pipecat[riva,webrtc,silero]
+
+# Web framework and server
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+
+# WebSocket support
+websockets>=15.0.0
+
+# LangGraph integration
+langgraph-sdk>=0.1.50
+langchain-core>=0.3.0
+
+# Pipecat WebRTC UI components
+pipecat-ai-small-webrtc-prebuilt>=0.1.0
+
+# Logging
+loguru>=0.7.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Optional: Text-based language validation (improves multi-language detection accuracy)
+# Uncomment to enable validation that catches acoustic misdetections
+langdetect>=1.0.9
+
+# NLTK for text processing (required by RTVI/TTS for sentence tokenization)
+nltk>=3.9.1
+
+
+
+

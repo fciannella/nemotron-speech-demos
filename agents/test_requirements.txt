@@ -1,0 +1,3 @@
+# Requirements for testing the LangGraph agent
+langgraph-sdk>=0.2.2
+

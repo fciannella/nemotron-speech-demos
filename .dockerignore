@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.installed.cfg
+*.egg
+pip-wheel-metadata/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.code-workspace
+
+# Environment files (will be provided via docker-compose)
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+
+# Testing
+.coverage
+.pytest_cache/
+.hypothesis/
+htmlcov/
+.tox/
+.nox/
+tests/
+
+# Documentation
+docs/
+*.md
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node.js (UI directory)
+ui/node_modules/
+ui/dist/
+
+# Archived files
+archived/
+
+# Docker files
+docker-compose.yml
+Dockerfile
+.dockerignore
+

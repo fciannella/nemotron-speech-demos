@@ -1,0 +1,115 @@
+services:
+  # Pipecat Backend Service
+  pipecat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pipecat-backend
+    ports:
+      - "7860:7860"
+    environment:
+      # NVIDIA API Keys (required)
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - NVIDIA_ASR_API_KEY=${NVIDIA_ASR_API_KEY:-}
+      - NVIDIA_TTS_API_KEY=${NVIDIA_TTS_API_KEY:-}
+      
+      # LLM Configuration (set to false to use LangGraph)
+      - USE_SIMPLE_LLM=false
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - SYSTEM_PROMPT=${SYSTEM_PROMPT:-You are a helpful AI voice assistant.}
+      
+      # LangGraph Configuration (hardcoded for simple_agent integration)
+      - LANGGRAPH_BASE_URL=http://langgraph:2024
+      - LANGGRAPH_ASSISTANT=simple_agent
+      - LANGGRAPH_STREAM_MODE=values
+      - LANGGRAPH_DEBUG_STREAM=true
+      - USER_EMAIL=${USER_EMAIL:-test@example.com}
+      
+      # NVIDIA Riva STT Configuration
+      - NVIDIA_ASR_FUNCTION_ID=${NVIDIA_ASR_FUNCTION_ID}
+      - RIVA_ASR_MODEL=${RIVA_ASR_MODEL:-parakeet-1.1b-en-US-asr-streaming-silero-vad-asr-bls-ensemble}
+      - RIVA_ASR_LANGUAGE=${RIVA_ASR_LANGUAGE:-en-US}
+      - LOG_DETECTED_LANGUAGE=${LOG_DETECTED_LANGUAGE:-true}
+      - VALIDATE_LANGUAGE_WITH_TEXT=${VALIDATE_LANGUAGE_WITH_TEXT:-true}
+      - RIVA_ASR_AUTO_PUNCTUATION=${RIVA_ASR_AUTO_PUNCTUATION:-true}
+      - RIVA_ASR_PROFANITY_FILTER=${RIVA_ASR_PROFANITY_FILTER:-false}
+      - RIVA_ASR_CUSTOM_CONFIG=${RIVA_ASR_CUSTOM_CONFIG:-}
+      
+      # NVIDIA Riva TTS Configuration
+      - NVIDIA_TTS_FUNCTION_ID=${NVIDIA_TTS_FUNCTION_ID}
+      - RIVA_TTS_MODEL=${RIVA_TTS_MODEL:-magpie-tts-multilingual}
+      - RIVA_TTS_VOICE_ID=${RIVA_TTS_VOICE_ID:-Magpie-Multilingual.EN-US.Mia.Neutral}
+      - RIVA_TTS_LANGUAGE=${RIVA_TTS_LANGUAGE:-en-US}
+      - RIVA_TTS_QUALITY=${RIVA_TTS_QUALITY:-20}
+      
+      # Audio Configuration
+      - AUDIO_SAMPLE_RATE=${AUDIO_SAMPLE_RATE:-16000}
+      
+      # Optional: Twilio TURN
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+    volumes:
+      # Mount audio contexts for voice samples
+      - ./audio_contexts:/app/audio_contexts:ro
+      # Optional: Mount .env file if you prefer
+      # - ./.env:/app/.env:ro
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - langgraph
+
+  # UI Frontend Service
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: pipecat-ui
+    ports:
+      - "80:80"
+    depends_on:
+      - pipecat
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # LangGraph Agents Service
+  langgraph:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: langgraph-agents
+    ports:
+      - "8124:2024"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-pipecat-agents}
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2024/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  app-network:
+    driver: bridge
+

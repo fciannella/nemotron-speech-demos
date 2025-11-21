@@ -1,0 +1,12 @@
+# LangGraph and LangChain dependencies
+langgraph>=0.2.62
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-core>=0.3.0
+
+# LangGraph CLI for development server (with inmem for in-memory storage)
+langgraph-cli[inmem]>=0.1.56
+
+# Environment variables
+python-dotenv>=1.0.0
+
