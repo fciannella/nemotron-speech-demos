@@ -1,0 +1,16 @@
+{
+  "pharmacies": {
+    "ph_sc_1010": {
+      "name": "Community Pharmacy",
+      "address": "1010 El Camino Real, Santa Clara, CA 95050",
+      "phone": "+1-408-555-3131",
+      "hours": "Mon-Sun 8:00-22:00"
+    },
+    "ph_sj_center": {
+      "name": "Center Care Pharmacy",
+      "address": "500 Market St, San Jose, CA 95113",
+      "phone": "+1-408-555-1212",
+      "hours": "Mon-Fri 9:00-18:00, Sat 10:00-16:00"
+    }
+  }
+}

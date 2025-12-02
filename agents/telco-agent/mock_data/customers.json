@@ -1,0 +1,66 @@
+{
+  "customers": {
+    "+15551234567": {
+      "profile": {
+        "first_name": "Alex",
+        "last_name": "Lee",
+        "full_name": "Alex Lee",
+        "dob": "1988-05-22",
+        "email": "alex.lee@example.com"
+      },
+      "msisdn": "+15551234567",
+      "package_id": "P-40",
+      "contract": {
+        "status": "active",
+        "start_date": "2024-01-10",
+        "end_date": "2026-01-10",
+        "early_termination_fee": 150.0,
+        "auto_renew": true
+      },
+      "usage": {
+        "current_month": { "data_gb_used": 12.5 },
+        "monthly_avg": { "data_gb": 28.0, "minutes": 600, "sms": 200 },
+        "history": [
+          { "month": "2025-07", "data_gb": 31.2, "minutes": 640, "sms": 210 },
+          { "month": "2025-08", "data_gb": 27.5, "minutes": 580, "sms": 190 },
+          { "month": "2025-09", "data_gb": 25.3, "minutes": 590, "sms": 200 }
+        ]
+      },
+      "addons": [
+        { "type": "roaming_pass", "country": "IT", "expires": "2025-09-30", "data_mb": 1024, "price": 10.0 }
+      ],
+      "billing": { "cycle_day": 5, "last_bill_amount": 45.0 }
+    },
+    "+447911123456": {
+      "profile": {
+        "first_name": "Sam",
+        "last_name": "Taylor",
+        "full_name": "Sam Taylor",
+        "dob": "1992-03-14",
+        "email": "sam.taylor@example.co.uk"
+      },
+      "msisdn": "+447911123456",
+      "package_id": "P-10",
+      "contract": {
+        "status": "active",
+        "start_date": "2024-06-01",
+        "end_date": "2025-12-01",
+        "early_termination_fee": 80.0,
+        "auto_renew": false
+      },
+      "usage": {
+        "current_month": { "data_gb_used": 8.1 },
+        "monthly_avg": { "data_gb": 9.0, "minutes": 300, "sms": 90 },
+        "history": [
+          { "month": "2025-07", "data_gb": 10.2, "minutes": 320, "sms": 100 },
+          { "month": "2025-08", "data_gb": 8.5, "minutes": 280, "sms": 85 },
+          { "month": "2025-09", "data_gb": 8.3, "minutes": 305, "sms": 88 }
+        ]
+      },
+      "addons": [],
+      "billing": { "cycle_day": 12, "last_bill_amount": 29.0 }
+    }
+  }
+}
+
+

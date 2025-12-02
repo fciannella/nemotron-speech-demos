@@ -1,0 +1,22 @@
+{
+  "WT-CHK-001": [
+    {"id": "w1", "date": "2025-08-25", "amount": -1200.00, "description": "Wire to John Smith (domestic)", "entry_type": "WIRE", "direction": "OUT"},
+    {"id": "w2", "date": "2025-08-25", "amount": -15.00, "description": "Wire fee domestic", "entry_type": "FEE", "fee_code": "WIRE_OUT"},
+    {"id": "p1", "date": "2025-08-15", "amount": 3000.00, "description": "Payroll", "entry_type": "CREDIT"}
+  ],
+  "WT-SAV-001": [],
+  "WT-CHK-101": [
+    {"id": "w3", "date": "2025-08-12", "amount": -2500.00, "description": "Wire to UK vendor (international)", "entry_type": "WIRE", "direction": "OUT"},
+    {"id": "w4", "date": "2025-08-12", "amount": -25.00, "description": "Wire fee international", "entry_type": "FEE", "fee_code": "WIRE_OUT"}
+  ],
+  "WT-SAV-101": [],
+  "WT-CHK-202": [],
+  "WT-SAV-303": [],
+  "WT-CHK-404": [
+    {"id": "w5", "date": "2025-08-05", "amount": -5000.00, "description": "Wire to CA supplier (international)", "entry_type": "WIRE", "direction": "OUT"},
+    {"id": "w6", "date": "2025-08-05", "amount": -35.00, "description": "Wire fee international", "entry_type": "FEE", "fee_code": "WIRE_OUT"}
+  ],
+  "WT-SAV-505": []
+}
+
+

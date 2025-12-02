@@ -1,0 +1,110 @@
+{
+  "patients": {
+    "pt_jmarshall": {
+      "profile": {
+        "patient_id": "pt_jmarshall",
+        "first_name": "John",
+        "last_name": "Marshall",
+        "full_name": "John Marshall",
+        "dob": "1960-01-01",
+        "mrn": "JM-1960-0001",
+        "mrn_last4": "0001",
+        "secret_question": "What is your favorite color?",
+        "secret_answer": "blue",
+        "phone": "+1-555-0101",
+        "email": "john.marshall@example.com",
+        "address": {
+          "line1": "12 Park Ave",
+          "city": "Santa Clara",
+          "state": "CA",
+          "zip": "95050"
+        },
+        "preferred_pharmacy_id": "ph_sc_1010"
+      },
+      "allergies": [
+        "Penicillin"
+      ],
+      "medications": [
+        {
+          "name": "Acetaminophen",
+          "sig": "500 mg, every 6 hours as needed for pain",
+          "rxnorm": "161",
+          "otc": true
+        }
+      ],
+      "conditions": [
+        "Hypertension"
+      ],
+      "recent_visits": [
+        {
+          "date": "2025-08-15",
+          "type": "Primary Care",
+          "reason": "Annual wellness visit",
+          "outcome": "Continue current meds"
+        }
+      ],
+      "vitals": {
+        "last": {
+          "date": "2025-08-15",
+          "bp": "128/78",
+          "hr": 72,
+          "temp_f": 98.4,
+          "bmi": 26.1
+        }
+      }
+    },
+    "pt_fciannella": {
+      "profile": {
+        "patient_id": "pt_fciannella",
+        "first_name": "Francesco",
+        "last_name": "Ciannella",
+        "full_name": "Francesco Ciannella",
+        "dob": "1990-01-01",
+        "mrn": "FC-1990-6001",
+        "mrn_last4": "6001",
+        "secret_question": "What city were you born in?",
+        "secret_answer": "rome",
+        "phone": "+1-555-0202",
+        "email": "francesco@example.com",
+        "address": {
+          "line1": "101 State St",
+          "city": "San Jose",
+          "state": "CA",
+          "zip": "95110"
+        },
+        "preferred_pharmacy_id": "ph_sc_1010"
+      },
+      "allergies": [
+        "NKA"
+      ],
+      "medications": [
+        {
+          "name": "Lisinopril",
+          "sig": "10 mg, once daily",
+          "rxnorm": "29046",
+          "otc": false
+        }
+      ],
+      "conditions": [
+        "Hypertension"
+      ],
+      "recent_visits": [
+        {
+          "date": "2025-07-02",
+          "type": "Urgent Care",
+          "reason": "Sore throat",
+          "outcome": "Viral pharyngitis; supportive care"
+        }
+      ],
+      "vitals": {
+        "last": {
+          "date": "2025-07-02",
+          "bp": "122/76",
+          "hr": 68,
+          "temp_f": 98.2,
+          "bmi": 24.9
+        }
+      }
+    }
+  }
+}

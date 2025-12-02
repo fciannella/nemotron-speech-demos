@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebRTC ICE Debug Tool</title>
+    <style>
+        body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+        .log { margin: 5px 0; padding: 5px; background: #2d2d2d; border-left: 3px solid #0e639c; }
+        .error { border-left-color: #f44336; }
+        .success { border-left-color: #4CAF50; }
+        .warning { border-left-color: #ff9800; }
+        button { background: #0e639c; color: white; border: none; padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+        button:hover { background: #1177bb; }
+        pre { background: #2d2d2d; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 WebRTC ICE Candidate Debugger</h1>
+    <p>This will show you exactly what's happening with WebRTC connection</p>
+    
+    <button onclick="testConnection()">Test WebRTC Connection to Backend</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    
+    <div id="logs"></div>
+    
+    <script>
+        function log(msg, type = 'log') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${msg}`;
+            document.getElementById('logs').appendChild(div);
+            console.log(msg);
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        async function testConnection() {
+            clearLogs();
+            log('🚀 Starting WebRTC connection test...', 'log');
+            
+            try {
+                // Get the API URL (same logic as main app)
+                const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                    ? 'http://localhost:7860'
+                    : `${window.location.protocol}//${window.location.hostname}:7860`;
+                
+                log(`🔗 Using API URL: ${apiUrl}`, 'log');
+                
+                // Fetch ICE servers
+                log('📡 Fetching ICE servers...', 'log');
+                const configRes = await fetch(`${apiUrl}/rtc-config`);
+                if (!configRes.ok) {
+                    throw new Error(`HTTP ${configRes.status}: ${await configRes.text()}`);
+                }
+                const config = await configRes.json();
+                log(`✅ ICE servers: ${JSON.stringify(config.iceServers, null, 2)}`, 'log');
+                
+                // Create peer connection
+                const pc = new RTCPeerConnection(config);
+                
+                const iceCandidates = [];
+                const candidateTypes = { host: 0, srflx: 0, relay: 0 };
+                
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        const c = event.candidate;
+                        iceCandidates.push(c);
+                        candidateTypes[c.type] = (candidateTypes[c.type] || 0) + 1;
+                        log(`📡 ICE Candidate: ${c.type} | ${c.protocol} | ${c.address}:${c.port}`, 'log');
+                        
+                        if (c.type === 'relay') {
+                            log('✅ TURN relay candidate obtained!', 'success');
+                        }
+                    } else {
+                        log('🏁 ICE gathering complete', 'log');
+                        log(`📊 Total: ${iceCandidates.length} candidates (host: ${candidateTypes.host}, srflx: ${candidateTypes.srflx}, relay: ${candidateTypes.relay})`, 'log');
+                        
+                        if (candidateTypes.relay === 0) {
+                            log('⚠️  WARNING: No TURN relay candidates! TURN servers may not be working.', 'warning');
+                        }
+                    }
+                };
+                
+                pc.oniceconnectionstatechange = () => {
+                    const state = pc.iceConnectionState;
+                    log(`🔄 ICE Connection State: ${state}`, state === 'connected' || state === 'completed' ? 'success' : state === 'failed' ? 'error' : 'log');
+                    
+                    if (state === 'failed') {
+                        log('❌ ICE connection FAILED. WebRTC cannot establish connection.', 'error');
+                        log('Possible causes: Firewall blocking UDP, TURN servers not working, symmetric NAT', 'error');
+                    }
+                };
+                
+                pc.onconnectionstatechange = () => {
+                    log(`🔗 Connection State: ${pc.connectionState}`, pc.connectionState === 'connected' ? 'success' : 'log');
+                };
+                
+                pc.onicegatheringstatechange = () => {
+                    log(`📊 ICE Gathering State: ${pc.iceGatheringState}`, 'log');
+                };
+                
+                pc.onicecandidateerror = (event) => {
+                    log(`❌ ICE Candidate Error: ${event.errorText} (code: ${event.errorCode}, url: ${event.url})`, 'error');
+                };
+                
+                // Create data channel to trigger ICE
+                const dc = pc.createDataChannel('test');
+                dc.onopen = () => log('✅ Data channel opened!', 'success');
+                dc.onerror = (e) => log(`❌ Data channel error: ${e}`, 'error');
+                
+                // Create offer
+                log('📝 Creating SDP offer...', 'log');
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                log('✅ Local description set', 'log');
+                
+                // Send offer to backend
+                log('📤 Sending offer to backend...', 'log');
+                const offerRes = await fetch(`${apiUrl}/api/offer?language=en-US`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sdp: offer.sdp,
+                        type: offer.type,
+                        pc_id: null,
+                        restart_pc: false
+                    })
+                });
+                
+                if (!offerRes.ok) {
+                    log(`❌ Backend returned error: ${offerRes.status}`, 'error');
+                    return;
+                }
+                
+                const answer = await offerRes.json();
+                log('✅ Received answer from backend', 'log');
+                
+                // Set remote description
+                await pc.setRemoteDescription(new RTCSessionDescription({
+                    sdp: answer.sdp,
+                    type: answer.type
+                }));
+                log('✅ Remote description set', 'log');
+                
+                // Wait and watch
+                log('⏳ Waiting for connection... (will timeout in 30 seconds)', 'log');
+                
+                await new Promise((resolve) => {
+                    const timeout = setTimeout(() => {
+                        if (pc.connectionState !== 'connected') {
+                            log('⏱️  Connection timeout - WebRTC did not establish within 30 seconds', 'error');
+                        }
+                        resolve();
+                    }, 30000);
+                    
+                    pc.onconnectionstatechange = () => {
+                        if (pc.connectionState === 'connected') {
+                            clearTimeout(timeout);
+                            log('🎉 SUCCESS! WebRTC connection established!', 'success');
+                            resolve();
+                        } else if (pc.connectionState === 'failed') {
+                            clearTimeout(timeout);
+                            resolve();
+                        }
+                    };
+                });
+                
+                // Cleanup
+                setTimeout(() => {
+                    pc.close();
+                    log('🔚 Test complete - peer connection closed', 'log');
+                }, 2000);
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
+

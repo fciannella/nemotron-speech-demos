@@ -1,0 +1,15 @@
+{
+  "saved": [
+    {
+      "customer_id": "cust_test",
+      "beneficiary_id": "B-001",
+      "name": "John Smith",
+      "country": "US",
+      "currency": "USD",
+      "bank_fields": {"routing_number": "021000021", "account_number": "123456789", "account_name": "John Smith"},
+      "last_used_at": "2025-08-25T10:00:00Z"
+    }
+  ]
+}
+
+

@@ -1,0 +1,30 @@
+{
+  "countries": {
+    "IT": {
+      "region": "EU",
+      "paygo": { "data_per_mb": 0.02, "call_per_min": 0.05, "sms": 0.02 },
+      "passes": [
+        { "id": "EU-DAY-1GB", "name": "EU Day Pass 1GB", "price": 5.0, "data_mb": 1024, "valid_days": 1 },
+        { "id": "EU-WEEK-5GB", "name": "EU Week Pass 5GB", "price": 15.0, "data_mb": 5120, "valid_days": 7 }
+      ]
+    },
+    "FR": {
+      "region": "EU",
+      "paygo": { "data_per_mb": 0.02, "call_per_min": 0.05, "sms": 0.02 },
+      "passes": [
+        { "id": "EU-DAY-1GB", "name": "EU Day Pass 1GB", "price": 5.0, "data_mb": 1024, "valid_days": 1 },
+        { "id": "EU-WEEK-5GB", "name": "EU Week Pass 5GB", "price": 15.0, "data_mb": 5120, "valid_days": 7 }
+      ]
+    },
+    "US": {
+      "region": "NA",
+      "paygo": { "data_per_mb": 0.15, "call_per_min": 0.20, "sms": 0.10 },
+      "passes": [
+        { "id": "NA-DAY-500MB", "name": "North America Day 500MB", "price": 7.0, "data_mb": 512, "valid_days": 1 },
+        { "id": "NA-WEEK-2GB", "name": "North America Week 2GB", "price": 20.0, "data_mb": 2048, "valid_days": 7 }
+      ]
+    }
+  }
+}
+
+

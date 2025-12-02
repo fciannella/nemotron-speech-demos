@@ -1,0 +1,54 @@
+{
+  "rules": [
+    {
+      "name": "Headache - red flags",
+      "match": ["headache"],
+      "red_flags": [
+        "worst headache",
+        "head injury",
+        "numbness",
+        "weakness",
+        "confusion",
+        "seizure",
+        "stiff neck",
+        "vision loss",
+        "high fever",
+        "fever 102",
+        "cancer",
+        "pregnant"
+      ],
+      "escalate": "urgent",
+      "advice": "This may require urgent evaluation. If you have any red flag symptoms, go to the nearest emergency department or call emergency services.",
+      "book_with": "prov_chang_np"
+    },
+    {
+      "name": "Headache - moderate risk (age > 50 new onset)",
+      "match": ["headache"],
+      "criteria": ["age_over_50"],
+      "escalate": "soon",
+      "advice": "Given your age and new headache, we recommend a prompt appointment to evaluate further.",
+      "book_with": "prov_smith_md"
+    },
+    {
+      "name": "Headache - typical",
+      "match": ["headache"],
+      "escalate": "self_care",
+      "advice": "Try rest, hydration, limited screen time, and acetaminophen as directed. Avoid ibuprofen if your doctor advised against it. If symptoms worsen or persist beyond 48 hours, schedule a visit.",
+      "book_with": "prov_smith_md"
+    },
+    {
+      "name": "Chest pain - emergency",
+      "match": ["chest pain"],
+      "escalate": "urgent",
+      "advice": "Chest pain can be serious. Please call emergency services now or go to the nearest ER.",
+      "book_with": "prov_chang_np"
+    },
+    {
+      "name": "Fever",
+      "match": ["fever"],
+      "escalate": "self_care",
+      "advice": "Hydration, rest, and acetaminophen can help. If fever is 102°F or higher, lasts more than 3 days, or you have trouble breathing, seek care.",
+      "book_with": "prov_smith_md"
+    }
+  ]
+}

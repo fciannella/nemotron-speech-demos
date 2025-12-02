@@ -44,10 +44,38 @@ docker compose up -d --build
 
 ### 3. Access the Application
 
+#### Local Development
+
 - **UI**: http://localhost
 - **Backend API**: http://localhost:7860
 - **WebSocket**: ws://localhost/ws
 - **LangGraph Studio**: http://localhost:2024
+
+#### Remote Server Deployment
+
+If you're deploying on a remote server and accessing from your local machine:
+
+1. Set the `VITE_API_BASE_URL` environment variable to your remote server's address:
+
+```bash
+# In your .env file on the remote server
+VITE_API_BASE_URL=http://YOUR_SERVER_IP:7860
+# or if using a domain name
+VITE_API_BASE_URL=http://your-domain.com:7860
+```
+
+2. Rebuild the UI container to apply the changes:
+
+```bash
+docker compose build ui
+docker compose up -d ui
+```
+
+3. Access the UI from your local machine:
+   - **UI**: http://YOUR_SERVER_IP or http://your-domain.com
+   - **Backend API**: http://YOUR_SERVER_IP:7860
+
+**Important**: The `VITE_API_BASE_URL` must be set **before** building the UI container, as it's baked into the compiled JavaScript during the build process.
 
 ## Configuration
 
@@ -130,6 +158,29 @@ docker compose build ui
 ```
 
 ## Troubleshooting
+
+### Remote Server Connection Issues
+
+**Symptoms:**
+- Browser console shows: `Failed to load resource: net::ERR_CONNECTION_REFUSED` for `localhost:7860/rtc-config`
+- "Could not fetch ICE servers, using defaults"
+- "Cannot read properties of undefined (reading 'enumerateDevices')"
+
+**Solution:**
+The UI is trying to connect to `localhost:7860` instead of your remote server. You need to configure the `VITE_API_BASE_URL` environment variable:
+
+1. Add to your `.env` file on the remote server:
+   ```bash
+   VITE_API_BASE_URL=http://YOUR_SERVER_IP:7860
+   ```
+
+2. Rebuild and restart the UI container:
+   ```bash
+   docker compose build ui
+   docker compose up -d ui
+   ```
+
+3. Clear your browser cache and refresh the page.
 
 ### Container Won't Start
 

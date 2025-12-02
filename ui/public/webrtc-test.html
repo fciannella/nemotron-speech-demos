@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple WebRTC P2P Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        .log { margin: 5px 0; padding: 5px; background: #2d2d2d; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        button { background: #0e639c; color: white; border: none; padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Simple WebRTC Peer-to-Peer Test</h1>
+    <p>This creates two peer connections on the same page to test WebRTC basics</p>
+    
+    <button onclick="runTest()">Run P2P Test</button>
+    <button onclick="clearLogs()">Clear</button>
+    
+    <div id="logs"></div>
+    
+    <script>
+        function log(msg, type = '') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${msg}`;
+            document.getElementById('logs').appendChild(div);
+            console.log(msg);
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        async function runTest() {
+            clearLogs();
+            log('🚀 Starting simple P2P WebRTC test...', '');
+            
+            const iceServers = [
+                { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                { urls: 'stun:stun.l.google.com:19302' }
+            ];
+            
+            log('📡 ICE Servers configured: ' + iceServers.length, '');
+            
+            const pc1 = new RTCPeerConnection({ iceServers });
+            const pc2 = new RTCPeerConnection({ iceServers });
+            
+            const candidates1 = [];
+            const candidates2 = [];
+            
+            pc1.onicecandidate = e => {
+                if (e.candidate) {
+                    candidates1.push(e.candidate);
+                    log(`PC1 ICE: ${e.candidate.type} ${e.candidate.protocol}`, '');
+                    pc2.addIceCandidate(e.candidate);
+                }
+            };
+            
+            pc2.onicecandidate = e => {
+                if (e.candidate) {
+                    candidates2.push(e.candidate);
+                    log(`PC2 ICE: ${e.candidate.type} ${e.candidate.protocol}`, '');
+                    pc1.addIceCandidate(e.candidate);
+                }
+            };
+            
+            pc1.oniceconnectionstatechange = () => {
+                log(`PC1 ICE State: ${pc1.iceConnectionState}`, 
+                    pc1.iceConnectionState === 'connected' ? 'success' : 
+                    pc1.iceConnectionState === 'failed' ? 'error' : 'warning');
+            };
+            
+            pc2.oniceconnectionstatechange = () => {
+                log(`PC2 ICE State: ${pc2.iceConnectionState}`, 
+                    pc2.iceConnectionState === 'connected' ? 'success' : 
+                    pc2.iceConnectionState === 'failed' ? 'error' : 'warning');
+            };
+            
+            pc1.onconnectionstatechange = () => {
+                log(`PC1 Connection: ${pc1.connectionState}`, 
+                    pc1.connectionState === 'connected' ? 'success' : '');
+                if (pc1.connectionState === 'connected') {
+                    log('🎉 SUCCESS! WebRTC P2P connection established!', 'success');
+                    log(`PC1 candidates: ${candidates1.length}, PC2 candidates: ${candidates2.length}`, 'success');
+                }
+            };
+            
+            // Create data channel
+            const dc = pc1.createDataChannel('test');
+            dc.onopen = () => {
+                log('✅ Data channel opened!', 'success');
+                dc.send('Hello from PC1!');
+            };
+            dc.onmessage = (e) => log(`PC1 received: ${e.data}`, 'success');
+            
+            pc2.ondatachannel = (e) => {
+                const dc2 = e.channel;
+                dc2.onopen = () => {
+                    log('✅ PC2 data channel opened!', 'success');
+                    dc2.send('Hello from PC2!');
+                };
+                dc2.onmessage = (e) => log(`PC2 received: ${e.data}`, 'success');
+            };
+            
+            // Create and exchange offers
+            try {
+                log('📝 Creating offer...', '');
+                const offer = await pc1.createOffer();
+                await pc1.setLocalDescription(offer);
+                await pc2.setRemoteDescription(offer);
+                
+                log('📝 Creating answer...', '');
+                const answer = await pc2.createOffer();
+                await pc2.setLocalDescription(answer);
+                await pc1.setRemoteDescription(answer);
+                
+                log('⏳ Waiting for connection (30 seconds)...', 'warning');
+                
+                setTimeout(() => {
+                    if (pc1.connectionState !== 'connected') {
+                        log('❌ Timeout - connection did not establish', 'error');
+                        log(`Final PC1 state: ${pc1.connectionState}, ICE: ${pc1.iceConnectionState}`, 'error');
+                        log(`Final PC2 state: ${pc2.connectionState}, ICE: ${pc2.iceConnectionState}`, 'error');
+                    }
+                }, 30000);
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
+

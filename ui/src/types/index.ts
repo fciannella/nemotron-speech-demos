@@ -5,6 +5,7 @@ export interface TranscriptionMessage {
   isUser: boolean;
   timestamp: number;
   baseText?: string; // Original final text before any interim additions
+  detectedLanguage?: string; // Detected language code (e.g., 'en-US', 'fr-FR')
 }
 
 export interface ConnectionState {

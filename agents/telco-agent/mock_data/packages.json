@@ -1,0 +1,72 @@
+{
+  "packages": [
+    {
+      "id": "P-10",
+      "name": "Lite 10GB 4G",
+      "monthly_fee": 25.0,
+      "data_gb": 10,
+      "minutes": 500,
+      "sms": 500,
+      "fiveg": false,
+      "data_rollover": true,
+      "eu_roaming": false,
+      "roam_included_countries": [],
+      "overage": { "per_gb": 8.0, "per_min": 0.05, "per_sms": 0.02 }
+    },
+    {
+      "id": "P-40",
+      "name": "Standard 40GB 5G",
+      "monthly_fee": 40.0,
+      "data_gb": 40,
+      "minutes": 1000,
+      "sms": 1000,
+      "fiveg": true,
+      "data_rollover": false,
+      "eu_roaming": true,
+      "roam_included_countries": ["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"],
+      "overage": { "per_gb": 6.0, "per_min": 0.03, "per_sms": 0.02 }
+    },
+    {
+      "id": "P-UNL-B",
+      "name": "Unlimited Basic 5G (100GB high-speed)",
+      "monthly_fee": 55.0,
+      "unlimited": true,
+      "highspeed_cap_gb": 100,
+      "throttle_mbps": 3,
+      "minutes": 2000,
+      "sms": 2000,
+      "fiveg": true,
+      "eu_roaming": true,
+      "roam_included_countries": ["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"],
+      "overage": { "per_gb": 0.0, "per_min": 0.0, "per_sms": 0.0 }
+    },
+    {
+      "id": "P-UNL-P",
+      "name": "Unlimited Premium 5G (300GB high-speed)",
+      "monthly_fee": 70.0,
+      "unlimited": true,
+      "highspeed_cap_gb": 300,
+      "throttle_mbps": 10,
+      "minutes": 5000,
+      "sms": 5000,
+      "fiveg": true,
+      "eu_roaming": true,
+      "roam_included_countries": ["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"],
+      "overage": { "per_gb": 0.0, "per_min": 0.0, "per_sms": 0.0 }
+    },
+    {
+      "id": "P-TRAVEL-EU-20",
+      "name": "Travelers EU 20GB",
+      "monthly_fee": 45.0,
+      "data_gb": 20,
+      "minutes": 1000,
+      "sms": 1000,
+      "fiveg": true,
+      "data_rollover": false,
+      "eu_roaming": true,
+      "roam_included_countries": ["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"],
+      "overage": { "per_gb": 6.0, "per_min": 0.03, "per_sms": 0.02 }
+    }
+  ]
+}
+

@@ -3,10 +3,25 @@ langgraph>=0.2.62
 langchain>=0.3.0
 langchain-openai>=0.2.0
 langchain-core>=0.3.0
+langchain-mcp-adapters>=0.1.14
 
 # LangGraph CLI for development server (with inmem for in-memory storage)
 langgraph-cli[inmem]>=0.1.56
 
+# MCP (Model Context Protocol) for claims investigation agent
+mcp>=1.0.0
+
+# Twilio for outbound calling (claims investigation agent)
+twilio>=9.0.0
+
+# PostgreSQL support (claims investigation agent)
+psycopg2-binary>=2.9.0
+
+# Logging
+loguru>=0.7.0
+
 # Environment variables
 python-dotenv>=1.0.0
+
+
 

@@ -1,0 +1,69 @@
+{
+  "A-CHK-001": [
+    {"id": "t1", "date": "2025-08-20", "amount": 12.50, "description": "NSF fee", "entry_type": "FEE", "fee_code": "NSF"},
+    {"id": "t2", "date": "2025-08-15", "amount": -45.00, "description": "Grocery Store", "entry_type": "DEBIT"},
+    {"id": "t3", "date": "2025-08-01", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"},
+    {"id": "t4", "date": "2025-07-01", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"},
+    {"id": "t5", "date": "2025-06-01", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"},
+    {"id": "t6", "date": "2025-05-22", "amount": 15.00, "description": "Overdraft fee", "entry_type": "FEE", "fee_code": "OVERDRAFT"},
+    {"id": "t7", "date": "2025-04-10", "amount": 20.00, "description": "Outgoing wire", "entry_type": "FEE", "fee_code": "WIRE_OUT"},
+    {"id": "t8", "date": "2025-03-02", "amount": 2.00, "description": "Paper statement", "entry_type": "FEE", "fee_code": "PAPER_STATEMENT"},
+    {"id": "t9", "date": "2025-02-18", "amount": 2.75, "description": "Foreign exchange fee", "entry_type": "FEE", "fee_code": "FX_FEE"},
+    {"id": "t10", "date": "2025-01-05", "amount": 15.00, "description": "Stop payment", "entry_type": "FEE", "fee_code": "STOP_PAYMENT"},
+    {"id": "t11", "date": "2025-09-01", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"},
+    {"id": "t12", "date": "2025-07-22", "amount": 2000.00, "description": "Payroll deposit", "entry_type": "CREDIT"},
+    {"id": "t13", "date": "2025-07-25", "amount": -60.00, "description": "Gas station", "entry_type": "DEBIT"},
+    {"id": "t14", "date": "2025-06-28", "amount": -85.30, "description": "Restaurant", "entry_type": "DEBIT"},
+    {"id": "t15", "date": "2025-05-11", "amount": 2.75, "description": "Foreign exchange fee", "entry_type": "FEE", "fee_code": "FX_FEE"},
+    {"id": "t16", "date": "2025-03-18", "amount": -120.49, "description": "Online purchase", "entry_type": "DEBIT"},
+    {"id": "t17", "date": "2025-02-14", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"},
+    {"id": "t18", "date": "2024-12-20", "amount": 20.00, "description": "Outgoing wire", "entry_type": "FEE", "fee_code": "WIRE_OUT"}
+  ],
+  "A-SAV-001": [
+    {"id": "s1", "date": "2025-08-10", "amount": 3.00, "description": "ATM withdrawal fee", "entry_type": "FEE", "fee_code": "ATM"},
+    {"id": "s2", "date": "2025-07-05", "amount": 3.00, "description": "ATM withdrawal fee", "entry_type": "FEE", "fee_code": "ATM"},
+    {"id": "s3", "date": "2025-06-20", "amount": 5.00, "description": "Excess withdrawal", "entry_type": "FEE", "fee_code": "EXCESS_WITHDRAWAL"},
+    {"id": "s4", "date": "2025-04-15", "amount": 3.50, "description": "Inactive account", "entry_type": "FEE", "fee_code": "INACTIVE_ACCOUNT"},
+    {"id": "s5", "date": "2025-03-09", "amount": 3.00, "description": "ATM withdrawal fee", "entry_type": "FEE", "fee_code": "ATM"},
+    {"id": "s6", "date": "2025-02-26", "amount": 5.00, "description": "Excess withdrawal", "entry_type": "FEE", "fee_code": "EXCESS_WITHDRAWAL"},
+    {"id": "s7", "date": "2025-01-30", "amount": 150.00, "description": "Transfer from chequing", "entry_type": "CREDIT"}
+  ],
+  "A-CHK-101": [
+    {"id": "ac101-1", "date": "2025-08-03", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"},
+    {"id": "ac101-2", "date": "2025-06-14", "amount": 12.50, "description": "NSF fee", "entry_type": "FEE", "fee_code": "NSF"},
+    {"id": "ac101-3", "date": "2025-03-28", "amount": 2.00, "description": "Paper statement", "entry_type": "FEE", "fee_code": "PAPER_STATEMENT"},
+    {"id": "ac101-4", "date": "2025-08-28", "amount": -75.20, "description": "Grocery Store", "entry_type": "DEBIT"},
+    {"id": "ac101-5", "date": "2025-07-02", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"},
+    {"id": "ac101-6", "date": "2025-05-19", "amount": 2.75, "description": "Foreign exchange fee", "entry_type": "FEE", "fee_code": "FX_FEE"},
+    {"id": "ac101-7", "date": "2025-04-06", "amount": -40.00, "description": "Fuel", "entry_type": "DEBIT"},
+    {"id": "ac101-8", "date": "2025-02-02", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"}
+  ],
+  "A-SAV-101": [
+    {"id": "as101-1", "date": "2025-07-22", "amount": 3.00, "description": "ATM withdrawal fee", "entry_type": "FEE", "fee_code": "ATM"},
+    {"id": "as101-2", "date": "2025-05-10", "amount": 5.00, "description": "Excess withdrawal", "entry_type": "FEE", "fee_code": "EXCESS_WITHDRAWAL"},
+    {"id": "as101-3", "date": "2025-03-03", "amount": 3.00, "description": "ATM withdrawal fee", "entry_type": "FEE", "fee_code": "ATM"},
+    {"id": "as101-4", "date": "2025-01-18", "amount": 110.00, "description": "Transfer from chequing", "entry_type": "CREDIT"}
+  ],
+  "A-CHK-202": [
+    {"id": "bc202-1", "date": "2025-08-11", "amount": 15.00, "description": "Overdraft fee", "entry_type": "FEE", "fee_code": "OVERDRAFT"},
+    {"id": "bc202-2", "date": "2025-07-01", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"},
+    {"id": "bc202-3", "date": "2025-05-25", "amount": -23.45, "description": "POS purchase", "entry_type": "DEBIT"},
+    {"id": "bc202-4", "date": "2025-04-01", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"}
+  ],
+  "A-SAV-303": [
+    {"id": "cs303-1", "date": "2025-06-07", "amount": 3.50, "description": "Inactive account", "entry_type": "FEE", "fee_code": "INACTIVE_ACCOUNT"},
+    {"id": "cs303-2", "date": "2025-08-14", "amount": 3.00, "description": "ATM withdrawal fee", "entry_type": "FEE", "fee_code": "ATM"}
+  ],
+  "A-CHK-404": [
+    {"id": "dc404-1", "date": "2025-05-05", "amount": 20.00, "description": "Outgoing wire", "entry_type": "FEE", "fee_code": "WIRE_OUT"},
+    {"id": "dc404-2", "date": "2025-04-01", "amount": 10.00, "description": "Monthly maintenance", "entry_type": "FEE", "fee_code": "MAINTENANCE"},
+    {"id": "dc404-3", "date": "2025-02-12", "amount": 2.75, "description": "Foreign exchange fee", "entry_type": "FEE", "fee_code": "FX_FEE"}
+  ],
+  "A-SAV-505": [
+    {"id": "es505-1", "date": "2025-08-08", "amount": 3.00, "description": "ATM withdrawal fee", "entry_type": "FEE", "fee_code": "ATM"},
+    {"id": "es505-2", "date": "2025-01-19", "amount": 5.00, "description": "Excess withdrawal", "entry_type": "FEE", "fee_code": "EXCESS_WITHDRAWAL"},
+    {"id": "es505-3", "date": "2025-03-27", "amount": 3.00, "description": "ATM withdrawal fee", "entry_type": "FEE", "fee_code": "ATM"}
+  ]
+}
+
+

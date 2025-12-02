@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC TURN Server Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .result { 
+            margin: 10px 0; 
+            padding: 10px;
+            border-left: 3px solid #4CAF50;
+            background: #2d2d2d;
+        }
+        .error { 
+            border-left-color: #f44336; 
+        }
+        .info { 
+            border-left-color: #2196F3; 
+        }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background: #1177bb;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        h1 { color: #4CAF50; }
+        code {
+            background: #2d2d2d;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 WebRTC TURN Server Connectivity Test</h1>
+    <p>This tool tests if your TURN servers are accessible and working.</p>
+    
+    <button onclick="testOpenRelay()">Test OpenRelay TURN Servers</button>
+    <button onclick="testCustom()">Test Custom TURN Server</button>
+    <button onclick="clearResults()">Clear Results</button>
+    
+    <div id="custom-config" style="margin-top: 20px; display: none;">
+        <h3>Custom TURN Server Configuration</h3>
+        <div>
+            <label>TURN URL: <input type="text" id="turn-url" value="turn:openrelay.metered.ca:80" style="width: 300px;"></label>
+        </div>
+        <div style="margin-top: 10px;">
+            <label>Username: <input type="text" id="turn-user" value="openrelayproject" style="width: 200px;"></label>
+        </div>
+        <div style="margin-top: 10px;">
+            <label>Credential: <input type="text" id="turn-cred" value="openrelayproject" style="width: 200px;"></label>
+        </div>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testTurnServers(iceServers) {
+            clearResults();
+            log('🚀 Starting TURN server connectivity test...', 'info');
+            log('ICE Servers: ' + JSON.stringify(iceServers, null, 2), 'info');
+
+            try {
+                const pc = new RTCPeerConnection({ iceServers });
+                
+                // Track ICE candidates
+                const candidates = [];
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        candidates.push(event.candidate);
+                        const type = event.candidate.type;
+                        const proto = event.candidate.protocol;
+                        const addr = event.candidate.address || event.candidate.candidate;
+                        log(`📡 ICE Candidate: ${type} (${proto}) - ${addr}`, 'info');
+                        
+                        if (type === 'relay') {
+                            log('✅ TURN relay candidate found! TURN servers are working!', 'success');
+                        }
+                    } else {
+                        log('🏁 All ICE candidates gathered', 'info');
+                        
+                        // Check if we got relay candidates
+                        const relays = candidates.filter(c => c.type === 'relay');
+                        if (relays.length > 0) {
+                            log(`✅ SUCCESS: ${relays.length} TURN relay candidate(s) obtained`, 'success');
+                        } else {
+                            log('❌ FAILED: No TURN relay candidates. TURN servers may not be working or accessible.', 'error');
+                        }
+                        
+                        // Summary
+                        const srflx = candidates.filter(c => c.type === 'srflx').length;
+                        const host = candidates.filter(c => c.type === 'host').length;
+                        log(`📊 Summary: ${host} host, ${srflx} srflx (STUN), ${relays.length} relay (TURN)`, 'info');
+                    }
+                };
+
+                pc.onicecandidateerror = (event) => {
+                    log(`❌ ICE candidate error: ${event.errorText} (code: ${event.errorCode})`, 'error');
+                };
+
+                pc.oniceconnectionstatechange = () => {
+                    log(`🔄 ICE connection state: ${pc.iceConnectionState}`, 'info');
+                };
+
+                // Create a data channel to trigger ICE gathering
+                pc.createDataChannel('test');
+
+                // Create offer to start ICE gathering
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+
+                log('⏳ Waiting for ICE candidates... (this may take 10-15 seconds)', 'info');
+
+                // Wait for gathering to complete
+                await new Promise((resolve) => {
+                    if (pc.iceGatheringState === 'complete') {
+                        resolve();
+                    } else {
+                        pc.addEventListener('icegatheringstatechange', () => {
+                            if (pc.iceGatheringState === 'complete') {
+                                resolve();
+                            }
+                        });
+                    }
+                    
+                    // Timeout after 20 seconds
+                    setTimeout(resolve, 20000);
+                });
+
+                pc.close();
+
+            } catch (error) {
+                log(`❌ Error during test: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        function testOpenRelay() {
+            const iceServers = [
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'stun:stun.l.google.com:19302'
+                }
+            ];
+            testTurnServers(iceServers);
+        }
+
+        function testCustom() {
+            document.getElementById('custom-config').style.display = 'block';
+            const url = document.getElementById('turn-url').value;
+            const user = document.getElementById('turn-user').value;
+            const cred = document.getElementById('turn-cred').value;
+            
+            const iceServers = [
+                {
+                    urls: url,
+                    username: user,
+                    credential: cred
+                },
+                {
+                    urls: 'stun:stun.l.google.com:19302'
+                }
+            ];
+            testTurnServers(iceServers);
+        }
+
+        // Auto-run test on load
+        window.addEventListener('load', () => {
+            log('👋 WebRTC TURN Test Tool loaded. Click "Test OpenRelay TURN Servers" to start.', 'info');
+        });
+    </script>
+</body>
+</html>
+

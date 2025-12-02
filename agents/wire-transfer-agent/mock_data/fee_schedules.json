@@ -1,0 +1,17 @@
+{
+  "DOMESTIC": {
+    "base_fee": 15.00,
+    "expedited_fee": 10.00,
+    "networks": ["ACH", "FEDWIRE"],
+    "payer_rules": {"OUR": true, "SHA": true, "BEN": true}
+  },
+  "INTERNATIONAL": {
+    "base_fee": 25.00,
+    "correspondent_fee": 10.00,
+    "lifting_fee": 5.00,
+    "swift_network_fee": 5.00,
+    "payer_rules": {"OUR": true, "SHA": true, "BEN": true}
+  }
+}
+
+

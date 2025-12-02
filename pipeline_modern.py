@@ -34,8 +34,10 @@ from pipecat.frames.frames import (
     TranscriptionFrame,
     InterimTranscriptionFrame,
     TextFrame,
-    EndFrame
+    EndFrame,
+    TTSAudioRawFrame,
 )
+import numpy as np
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -59,6 +61,96 @@ from pipecat.frames.frames import InterimTranscriptionFrame, TranscriptionFrame
 from pipecat.utils.time import time_now_iso8601
 
 from langgraph_llm_service import LangGraphLLMService
+
+
+class GainProcessor(FrameProcessor):
+    """Apply configurable gain to TTS audio output.
+    
+    This processor intercepts TTSAudioRawFrame frames and applies a gain
+    multiplier to boost (or reduce) the audio volume. Useful when TTS
+    output is too quiet.
+    
+    Example:
+        gain_processor = GainProcessor(gain=1.5)  # 50% louder
+        gain_processor = GainProcessor(gain=2.0)  # 100% louder (2x)
+    """
+    
+    def __init__(self, gain: float = 1.0, max_gain: float = 4.0, **kwargs):
+        """Initialize the gain processor.
+        
+        Args:
+            gain: Gain multiplier (1.0 = no change, 2.0 = double volume)
+            max_gain: Maximum allowed gain to prevent extreme clipping
+            **kwargs: Additional arguments passed to FrameProcessor
+        """
+        super().__init__(**kwargs)
+        self._gain = min(gain, max_gain)  # Clamp to max
+        self._max_gain = max_gain
+        self._enabled = gain != 1.0
+        
+        if self._enabled:
+            logger.info(f"🔊 GainProcessor initialized with gain={self._gain:.2f}x")
+        else:
+            logger.debug("GainProcessor initialized but disabled (gain=1.0)")
+    
+    @property
+    def gain(self) -> float:
+        """Get the current gain value."""
+        return self._gain
+    
+    @gain.setter
+    def gain(self, value: float):
+        """Set the gain value (clamped to max_gain)."""
+        self._gain = min(value, self._max_gain)
+        self._enabled = self._gain != 1.0
+        logger.info(f"🔊 GainProcessor gain set to {self._gain:.2f}x")
+    
+    async def process_frame(self, frame: Frame, direction: FrameDirection):
+        """Process frames, applying gain to TTS audio frames.
+        
+        Args:
+            frame: The frame to process
+            direction: The direction of frame flow
+        """
+        # IMPORTANT: Call parent's process_frame first to handle pipeline setup
+        await super().process_frame(frame, direction)
+        
+        if isinstance(frame, TTSAudioRawFrame) and self._enabled:
+            # Apply gain to audio data
+            boosted_audio = self._apply_gain(frame.audio)
+            
+            # Create new frame with boosted audio
+            boosted_frame = TTSAudioRawFrame(
+                audio=boosted_audio,
+                sample_rate=frame.sample_rate,
+                num_channels=frame.num_channels,
+            )
+            await self.push_frame(boosted_frame, direction)
+        else:
+            # Pass through all other frames unchanged
+            await self.push_frame(frame, direction)
+    
+    def _apply_gain(self, audio: bytes) -> bytes:
+        """Apply gain to raw audio bytes.
+        
+        Args:
+            audio: Raw PCM audio data (16-bit signed integers)
+            
+        Returns:
+            Gain-adjusted audio data, clipped to prevent overflow
+        """
+        # Convert bytes to numpy array of int16
+        audio_np = np.frombuffer(audio, dtype=np.int16).astype(np.float32)
+        
+        # Apply gain
+        audio_np = audio_np * self._gain
+        
+        # Clip to int16 range to prevent overflow/distortion
+        audio_np = np.clip(audio_np, -32768, 32767)
+        
+        # Convert back to bytes
+        return audio_np.astype(np.int16).tobytes()
+
 
 # Optional: Text-based language detection for validation
 try:
@@ -345,8 +437,11 @@ class MultilingualRivaSTTService(RivaSTTService):
                             if not detected_language and hasattr(self, '_detected_language'):
                                 logger.debug(f"   (Using last detected language: {self._detected_language})")
                             logger.info(f"🎤 USER (final){lang_tag}: {transcript}")
+                            logger.info(f"   📏 Transcript length: {len(transcript)} chars")
+                            logger.info(f"   🔊 Audio confidence: {confidence if confidence else 'N/A'}")
                         elif result.stability == 1.0:
                             logger.debug(f"🎤 USER (interim){lang_tag}: {transcript}")
+                            logger.debug(f"   📏 Length: {len(transcript)} chars, Stability: {result.stability}")
         except Exception as e:
             logger.debug(f"Error extracting language from Riva response: {e}")
         
@@ -631,6 +726,44 @@ def build_client_ice_servers() -> list[dict]:
             server["credential"] = turn_pass
         servers.append(server)
         logger.info("Using env var TURN server")
+    else:
+        # Use multiple free public TURN servers as fallback
+        logger.info("No TURN server configured, using free public TURN servers")
+        servers.extend([
+            # Metered TURN servers
+            {
+                "urls": "turn:a.relay.metered.ca:80",
+                "username": "87a6ecbbd38171216ad8d923",
+                "credential": "16NUSmVjZ6+rm9GE"
+            },
+            {
+                "urls": "turn:a.relay.metered.ca:443",
+                "username": "87a6ecbbd38171216ad8d923",
+                "credential": "16NUSmVjZ6+rm9GE"
+            },
+            {
+                "urls": "turn:a.relay.metered.ca:443?transport=tcp",
+                "username": "87a6ecbbd38171216ad8d923",
+                "credential": "16NUSmVjZ6+rm9GE"
+            },
+            # Alternate Metered TURN
+            {
+                "urls": "turn:global.relay.metered.ca:80",
+                "username": "87a6ecbbd38171216ad8d923",
+                "credential": "16NUSmVjZ6+rm9GE"
+            },
+            {
+                "urls": "turn:global.relay.metered.ca:443",
+                "username": "87a6ecbbd38171216ad8d923",
+                "credential": "16NUSmVjZ6+rm9GE"
+            },
+            # Twilio Stun/Turn (public, limited)
+            {
+                "urls": "turn:global.turn.twilio.com:3478?transport=udp",
+                "username": "f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d",
+                "credential": "w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLw="
+            }
+        ])
     
     # Always include public STUN
     servers.append({"urls": "stun:stun.l.google.com:19302"})
@@ -684,12 +817,21 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
     sample_rate = int(os.getenv("AUDIO_SAMPLE_RATE", "16000"))
     
     # Configure VAD (Voice Activity Detection) parameters
+    # Conservative settings to avoid splitting utterances mid-speech
+    logger.info("")
+    logger.info("🎚️  VAD CONFIGURATION:")
     vad_params = VADParams(
-        confidence=0.5,    # Lower = more sensitive (default: 0.7)
-        start_secs=0.3,    # Wait 300ms before confirming speech started (default: 0.2)
-        stop_secs=1.5,     # Wait 1.5s of silence before stopping (default: 0.8) ← KEY CHANGE!
-        min_volume=0.5     # Lower = picks up quieter speech (default: 0.6)
+        confidence=0.5,    # Moderate sensitivity (default: 0.7)
+        start_secs=0.2,    # 200ms detection delay - standard
+        stop_secs=1.8,     # Wait 1.8s of silence - more patient for natural pauses
+        min_volume=0.5     # Standard volume threshold (default: 0.6)
     )
+    logger.info(f"   • Confidence: {vad_params.confidence} (lower = more sensitive)")
+    logger.info(f"   • Start threshold: {vad_params.start_secs}s (speech detection delay)")
+    logger.info(f"   • Stop threshold: {vad_params.stop_secs}s (patience for natural pauses)")
+    logger.info(f"   • Min volume: {vad_params.min_volume} (volume threshold)")
+    logger.info(f"   ℹ️  Conservative settings to avoid mid-speech splits")
+    logger.info("")
     
     transport_params = TransportParams(
         audio_in_enabled=True,
@@ -742,27 +884,52 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
     # NVIDIA Riva STT (Speech-to-Text)
     logger.info("🎤 Creating Riva STT service...")
     
-    # Support separate ASR key or fall back to general NVIDIA key
-    nvidia_asr_api_key = (
-        os.getenv("NVIDIA_ASR_API_KEY") 
-        or os.getenv("NVIDIA_API_KEY")
-    )
-    if not nvidia_asr_api_key:
-        raise ValueError("NVIDIA_ASR_API_KEY or NVIDIA_API_KEY environment variable required")
+    # Use language override from client if provided, otherwise fall back to env variable
+    env_language = os.getenv("RIVA_ASR_LANGUAGE", "en-US")
+    language_code = language_override or env_language
+    
+    # Check if using Mandarin in language-specific mode (NOT multi)
+    # Mandarin requires a different NVCF endpoint AND a different API key
+    use_mandarin_endpoint = (language_code == "zh-CN")
     
     # Log ASR configuration for debugging
-    asr_function_id = os.getenv("NVIDIA_ASR_FUNCTION_ID", "52b117d2-6c15-4cfa-a905-a67013bee409")
-    asr_model_name = os.getenv("RIVA_ASR_MODEL", "parakeet-1.1b-en-US-asr-streaming-silero-vad-asr-bls-ensemble")
     asr_server = os.getenv("RIVA_ASR_URL", "grpc.nvcf.nvidia.com:443")
+    
+    if use_mandarin_endpoint:
+        # Mandarin-specific ASR endpoint (language-specific mode only)
+        # Uses separate function ID and API key
+        asr_function_id = os.getenv("NVIDIA_ASR_MANDARIN_FUNCTION_ID")
+        if not asr_function_id:
+            raise ValueError("NVIDIA_ASR_MANDARIN_FUNCTION_ID environment variable required for Mandarin ASR")
+        
+        # Mandarin uses its own API key
+        nvidia_asr_api_key = os.getenv("NVIDIA_RIVA_MANDARIN_API_KEY")
+        if not nvidia_asr_api_key:
+            raise ValueError("NVIDIA_RIVA_MANDARIN_API_KEY environment variable required for Mandarin ASR")
+        
+        asr_model_name = None  # Use default model at endpoint (only one model there)
+        logger.info("   🇨🇳 Using Mandarin-specific ASR endpoint")
+        logger.info("   🇨🇳 Using Mandarin-specific API key")
+    else:
+        # Default ASR endpoint (all other languages)
+        asr_function_id = os.getenv("NVIDIA_ASR_FUNCTION_ID", "52b117d2-6c15-4cfa-a905-a67013bee409")
+        asr_model_name = os.getenv("RIVA_ASR_MODEL", "parakeet-1.1b-en-US-asr-streaming-silero-vad-asr-bls-ensemble")
+        
+        # Support separate ASR key or fall back to general NVIDIA key
+        nvidia_asr_api_key = (
+            os.getenv("NVIDIA_ASR_API_KEY") 
+            or os.getenv("NVIDIA_API_KEY")
+        )
+        if not nvidia_asr_api_key:
+            raise ValueError("NVIDIA_ASR_API_KEY or NVIDIA_API_KEY environment variable required")
     
     logger.info(f"   🔑 NGC API Key: {nvidia_asr_api_key[:10]}...{nvidia_asr_api_key[-8:]}")
     logger.info(f"   🆔 Function ID: {asr_function_id}")
     logger.info(f"   🖥️  Server: {asr_server}")
-    logger.info(f"   📦 Model: {asr_model_name}")
-    
-    # Use language override from client if provided, otherwise fall back to env variable
-    env_language = os.getenv("RIVA_ASR_LANGUAGE", "en-US")
-    language_code = language_override or env_language
+    if asr_model_name:
+        logger.info(f"   📦 Model: {asr_model_name}")
+    else:
+        logger.info(f"   📦 Model: (using default at endpoint)")
     
     logger.info("")
     logger.info("🌐 LANGUAGE CONFIGURATION:")
@@ -778,9 +945,17 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
     # The actual language code "multi" will be set via custom_configuration
     stt_params_language = Language.EN_US if enable_language_detection else stt_language
     
-    # Build custom configuration for multi-language detection
+    # Build custom configuration for Riva ASR
+    # NOTE: Riva VAD is RE-ENABLED because disabling it causes truncated final transcripts
+    # Riva needs its VAD to properly finalize utterances even when Pipecat VAD triggers
     custom_config = os.getenv("RIVA_ASR_CUSTOM_CONFIG", 
-                              "enable_vad_endpointing:true,neural_vad.onset:0.65,apply_partial_itn:true")
+                              "enable_vad_endpointing:true,neural_vad.onset:0.5,apply_partial_itn:true")
+    
+    logger.info("")
+    logger.info("🎚️  RIVA ASR CONFIGURATION:")
+    logger.info(f"   • Custom config: {custom_config}")
+    logger.info("   ℹ️  Riva VAD enabled with onset=0.5 (needed for proper finalization)")
+    
     if enable_language_detection:
         # Add language detection configuration
         if custom_config:
@@ -788,28 +963,37 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
         else:
             custom_config = "enable_automatic_language_detection:true"
         logger.info("   🌐 MODE: Multi-language auto-detection enabled")
-        logger.info(f"   ⚙️  Custom config: {custom_config}")
+        logger.info(f"   ⚙️  Final config: {custom_config}")
     else:
         logger.info(f"   🎯 MODE: Single language (language-specific)")
-        logger.info(f"   ⚙️  Custom config: {custom_config}")
+        logger.info(f"   ⚙️  Final config: {custom_config}")
+    logger.info("")
     
     # Text-based validation option (requires langdetect)
+    # NOTE: Disabled for Mandarin - langdetect may not work well with Chinese characters
+    # and we already know the language in language-specific mode
     validate_with_text = os.getenv("VALIDATE_LANGUAGE_WITH_TEXT", "true").lower() == "true"
-    if validate_with_text and not LANGDETECT_AVAILABLE:
+    if use_mandarin_endpoint:
+        validate_with_text = False
+        logger.info("   🇨🇳 Text validation disabled for Mandarin (not needed in language-specific mode)")
+    elif validate_with_text and not LANGDETECT_AVAILABLE:
         logger.warning("⚠️  VALIDATE_LANGUAGE_WITH_TEXT=true but langdetect not installed")
         logger.warning("   Install with: pip install langdetect")
         validate_with_text = False
     elif validate_with_text:
         logger.info("   ✅ Text-based language validation enabled")
     
+    # Build model_function_map - only include model_name if specified
+    # (Mandarin endpoint uses default model, no name needed)
+    asr_model_function_map = {"function_id": asr_function_id}
+    if asr_model_name:
+        asr_model_function_map["model_name"] = asr_model_name
+    
     stt = MultilingualRivaSTTService(
         api_key=nvidia_asr_api_key,
         server=asr_server,
         sample_rate=sample_rate,
-        model_function_map={
-            "function_id": asr_function_id,
-            "model_name": asr_model_name
-        },
+        model_function_map=asr_model_function_map,
         params=RivaSTTService.InputParams(
             language=stt_params_language
         ),
@@ -820,6 +1004,19 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
         log_detected_language=enable_language_detection or os.getenv("LOG_DETECTED_LANGUAGE", "true").lower() == "true",
         validate_with_text=validate_with_text,
     )
+    
+    # Fix for Mandarin: Pipecat's language_to_riva_language doesn't map Language.ZH to "zh-CN"
+    # so we need to override the language code directly for Mandarin
+    # IMPORTANT: Must also update the cached config object that was built during __init__
+    if use_mandarin_endpoint:
+        stt._language_code = "zh-CN"
+        # Also update the config object that was already created with the wrong language
+        if hasattr(stt, '_config') and stt._config is not None:
+            stt._config.config.language_code = "zh-CN"
+            logger.info(f"   🇨🇳 Overriding language code to 'zh-CN' in both _language_code and _config")
+        else:
+            logger.info(f"   🇨🇳 Overriding language code to 'zh-CN' for Mandarin endpoint")
+    
     logger.info(f"   ✅ Riva STT Service created")
     if enable_language_detection:
         logger.info(f"   📝 Language: MULTI (auto-detect any language)")
@@ -848,18 +1045,53 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
     
     # Select default voice based on the selected language (if in language-specific mode)
     # Otherwise use env variable or default to English
+    # IMPORTANT: This must match LanguageAdaptiveTTSService.LANGUAGE_CONFIG_MAP exactly!
+    # Maps ALL language code variants to appropriate Magpie voices
+    # Note: Magpie Multilingual only supports 5 languages: en-US, es-US, fr-FR, de-DE, zh-CN
     default_voice_map = {
+        # English (female - Mia)
         "en-US": "Magpie-Multilingual.EN-US.Mia.Neutral",
+        "en-GB": "Magpie-Multilingual.EN-US.Mia.Neutral",  # UK → US voice
+        
+        # Spanish (female - Isabela)
         "es-US": "Magpie-Multilingual.ES-US.Isabela",
-        "de-DE": "Magpie-Multilingual.DE-DE.Erik",
+        "es-ES": "Magpie-Multilingual.ES-US.Isabela",      # Spain → US voice (same as adaptive)
+        
+        # French (male - Pascal) 👨 - Only male voice!
         "fr-FR": "Magpie-Multilingual.FR-FR.Pascal",
-        "zh-CN": "Magpie-Multilingual.ZH-CN.Qingqing",
+        
+        # German (female - Aria) - Match LanguageAdaptiveTTSService
+        "de-DE": "Magpie-Multilingual.DE-DE.Aria",
+        
+        # Chinese (female - Mia)
+        "zh-CN": "Magpie-Multilingual.ZH-CN.Mia",
+        "zh-TW": "Magpie-Multilingual.ZH-CN.Mia",     # Traditional → Simplified voice
+        
+        # Unsupported languages - fallback to English (Mia)
+        # These languages will use English voice to speak the foreign text
+        "pt-BR": "Magpie-Multilingual.EN-US.Mia.Neutral",  # Portuguese → English voice
+        "it-IT": "Magpie-Multilingual.EN-US.Mia.Neutral",  # Italian → English voice
+        "ja-JP": "Magpie-Multilingual.EN-US.Mia.Neutral",  # Japanese → English voice
+        "ko-KR": "Magpie-Multilingual.EN-US.Mia.Neutral",  # Korean → English voice
     }
     
     # Use language from UI selection if not in multi mode
     selected_lang_for_voice = language_code if not enable_language_detection else "en-US"
+    
+    logger.info("")
+    logger.info("🎙️  VOICE SELECTION DEBUG:")
+    logger.info(f"   • language_code (from UI/env): {language_code}")
+    logger.info(f"   • enable_language_detection: {enable_language_detection}")
+    logger.info(f"   • selected_lang_for_voice: {selected_lang_for_voice}")
+    logger.info(f"   • Looking up in default_voice_map: '{selected_lang_for_voice}'")
+    
     default_voice_for_lang = default_voice_map.get(selected_lang_for_voice, "Magpie-Multilingual.EN-US.Mia.Neutral")
+    logger.info(f"   • Found voice in map: {default_voice_for_lang}")
+    
     tts_voice_id = os.getenv("RIVA_TTS_VOICE_ID", default_voice_for_lang)
+    logger.info(f"   • ENV override (RIVA_TTS_VOICE_ID): {os.getenv('RIVA_TTS_VOICE_ID', 'None - using default')}")
+    logger.info(f"   • FINAL voice_id to use: {tts_voice_id}")
+    logger.info("")
     
     logger.info(f"   🔑 NGC API Key: {nvidia_tts_api_key[:10]}...{nvidia_tts_api_key[-8:]}")
     logger.info(f"   🆔 Function ID: {tts_function_id}")
@@ -906,6 +1138,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
     # Use language-adaptive TTS when multi-language detection is enabled
     if enable_language_detection:
         logger.info("   🌐 Language-adaptive TTS enabled (will switch based on detected language)")
+        logger.info("   📝 Creating LanguageAdaptiveTTSService...")
         tts = LanguageAdaptiveTTSService(
             api_key=nvidia_tts_api_key,
             server=tts_server,
@@ -926,6 +1159,13 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
         )
     else:
         # Standard TTS without language adaptation
+        logger.info("   🎯 Standard TTS (language-specific mode)")
+        logger.info("   📝 Creating RivaTTSService...")
+        logger.info(f"   🔊 CRITICAL TTS PARAMETERS:")
+        logger.info(f"      • voice_id: {tts_voice_id}")
+        logger.info(f"      • language: {tts_language} (enum: {tts_language_str})")
+        logger.info(f"      • sample_rate: {sample_rate}")
+        
         tts = RivaTTSService(
             api_key=nvidia_tts_api_key,
             server=tts_server,
@@ -943,8 +1183,14 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
             zero_shot_audio_prompt_file=zero_shot_prompt,
         )
     
-    logger.info(f"   ✅ Service created")
-    logger.info(f"   📝 Language: {tts._language_code}")
+    # Fix for Mandarin TTS: Same as STT, Pipecat's language_to_riva_language doesn't map Language.ZH to "zh-CN"
+    if use_mandarin_endpoint:
+        tts._language_code = "zh-CN"
+        logger.info(f"   🇨🇳 Overriding TTS language code to 'zh-CN' for Mandarin")
+    
+    logger.info(f"   ✅ TTS Service created")
+    logger.info(f"   📝 Final TTS Language Code: {tts._language_code}")
+    logger.info(f"   🎙️  Final TTS Voice ID: {tts._voice_id}")
     logger.info(f"   🎵 Sample rate: {tts._sample_rate}Hz")
     
     # Create context with initial system prompt
@@ -983,6 +1229,15 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
     # Create RTVI processor for handling RTVI protocol messages (transcriptions, etc.)
     rtvi_processor = RTVIProcessor()
     
+    # Create gain processor for TTS output volume boost
+    # Configurable via TTS_OUTPUT_GAIN environment variable (default: 1.0 = no change)
+    # Recommended values: 1.5 (50% louder), 2.0 (100% louder), 2.5 (150% louder)
+    tts_gain = float(os.getenv("TTS_OUTPUT_GAIN", "1.0"))
+    gain_processor = GainProcessor(gain=tts_gain)
+    
+    if tts_gain != 1.0:
+        logger.info(f"🔊 TTS Output Gain: {tts_gain:.2f}x")
+    
     pipeline_processors = [
         transport.input(),              # WebRTC audio input
         rtvi_processor,                # RTVI protocol handler (sends transcriptions to client)
@@ -991,6 +1246,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, ws: Optional[WebSock
         context_aggregator.user(),     # Aggregate user messages
         llm,                           # LLM (LangGraph)
         tts,                           # Text-to-Speech (Riva)
+        gain_processor,                # Apply gain to TTS output (configurable)
     ]
     
     # Add transcript output if WebSocket is provided (optional, for debugging)

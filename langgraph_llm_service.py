@@ -102,6 +102,51 @@ class LangGraphLLMService(OpenAILLMService):
         self._current_task: Optional[asyncio.Task] = None
         self._outer_open: bool = False
         self._emitted_texts: set[str] = set()
+        self._runtime_config: Optional[dict] = None  # Runtime configuration for agent
+        self._last_content: str = ""  # Track last content to detect changes
+        self._tools_seen: set[str] = set()  # Track tools to detect when we hit final response
+
+    def set_runtime_config(self, config: dict) -> None:
+        """Set runtime configuration for the agent.
+        
+        Args:
+            config: Configuration dict with 'configurable' and optional 'metadata' keys.
+                   Example: {
+                       "configurable": {"book_id": "123", "agent_voice": "author"},
+                       "metadata": {"user_id": "user@example.com"}
+                   }
+        """
+        self._runtime_config = config
+        logger.info(f"[LangGraph] Runtime config set: {config}")
+    
+    def get_runtime_config(self) -> Optional[dict]:
+        """Get the current runtime configuration."""
+        return self._runtime_config
+    
+    def _build_config(self) -> dict:
+        """Build the configuration for LangGraph runs, merging base + runtime config.
+        
+        Returns:
+            Merged configuration dict
+        """
+        # Start with base config
+        config: dict = {
+            "configurable": {
+                "user_email": self.user_email
+            }
+        }
+        
+        # Merge runtime config if present
+        if self._runtime_config:
+            # Merge configurable section
+            if "configurable" in self._runtime_config:
+                config["configurable"].update(self._runtime_config["configurable"])
+            
+            # Add metadata section if present
+            if "metadata" in self._runtime_config:
+                config["metadata"] = self._runtime_config["metadata"]
+        
+        return config
 
     async def _ensure_thread(self) -> Optional[str]:
         if self._thread_id:
@@ -155,13 +200,22 @@ class LangGraphLLMService(OpenAILLMService):
         logger.info(f"[LangGraph] Starting stream for text: '{text[:50]}...'")
         logger.info(f"[LangGraph] Config: assistant={self.assistant}, stream_mode={self.stream_mode}, thread_id={self._thread_id}")
         
-        config = {"configurable": {"user_email": self.user_email}}
+        # Clear previous state
+        self._last_content = ""
+        self._tools_seen.clear()
+        self._outer_open = False
+        self._emitted_texts.clear()
+        
+        # Build config with runtime parameters
+        config = self._build_config()
+        logger.info(f"[LangGraph] Using config: {config}")
+        
         # Attempt to ensure thread; OK if None (threadless run)
         await self._ensure_thread()
         
         logger.info(f"[LangGraph] Thread ensured: {self._thread_id}")
         
-        # Get conversation history from thread state and append new message
+        # Get conversation history from thread state
         input_messages = []
         if self._thread_id:
             try:
@@ -177,142 +231,163 @@ class LangGraphLLMService(OpenAILLMService):
         # Append the new user message
         input_messages.append({"role": "user", "content": text})
         logger.info(f"[LangGraph] Sending {len(input_messages)} total messages to agent")
+        logger.info(f"[LangGraph] Latest user message: '{text[:100]}...'")
 
+        # For Functional API, send messages as a plain list (not wrapped in dict)
+        # simple_agent(messages: list) expects the list directly
+        
         try:
-            logger.info(f"[LangGraph] Starting SDK stream...")
+            logger.info(f"[LangGraph] Starting SDK stream with mode: {self.stream_mode}...")
             async for chunk in self._client.runs.stream(
                 self._thread_id,
                 self.assistant,
-                input=input_messages,  # Send full conversation history!
-                stream_mode=self.stream_mode,
+                input=input_messages,  # Send as plain list for Functional API
+                stream_mode=self.stream_mode,  # Use string, not list
                 config=config,
             ):
                 data = getattr(chunk, "data", None)
                 event = getattr(chunk, "event", "") or ""
                 
-                # ALWAYS log first to see if we're getting chunks
-                logger.info(f"[LangGraph] Received chunk: event='{event}', data_type={type(data).__name__}")
+                logger.info(f"[LangGraph] 📦 Chunk: event='{event}', data_type={type(data).__name__}")
+                
+                # Log data structure for debugging
+                if isinstance(data, dict):
+                    logger.debug(f"[LangGraph]    Data keys: {list(data.keys())}")
+                elif isinstance(data, str):
+                    logger.debug(f"[LangGraph]    Data string: '{data[:100]}...'")
+                elif hasattr(data, 'content'):
+                    logger.debug(f"[LangGraph]    Data content: '{getattr(data, 'content', '')[:100]}...'")
 
-                if self.debug_stream:
-                    try:
-                        # Short, structured debugging output
-                        dtype = type(data).__name__
-                        preview = ""
-                        if hasattr(data, "content") and isinstance(getattr(data, "content"), str):
-                            c = getattr(data, "content")
-                            preview = c[:120]
-                        elif isinstance(data, dict):
-                            preview = ",".join(list(data.keys())[:6])
-                        logger.debug(f"[LangGraph stream] event={event} data={dtype}:{preview}")
-                    except Exception:  # noqa: BLE001
-                        logger.debug(f"[LangGraph stream] event={event}")
+                # Handle messages/partial events for token-by-token streaming
+                # This gives us incremental content as tokens arrive
+                # Also handle plain "messages" events which contain the message list
+                if (event == "messages/partial" or event == "messages") and data is not None:
+                    # Extract messages from data
+                    messages = []
+                    if isinstance(data, (list, tuple)):
+                        messages = list(data)
+                    elif isinstance(data, dict) and "messages" in data:
+                        messages = data.get("messages", [])
+                    
+                    logger.info(f"[LangGraph] 📧 Processing {event}: found {len(messages)} message(s)")
+                    
+                    if messages and len(messages) > 0:
+                        # Track tool calls to know when we've moved past internal processing
+                        for msg in messages:
+                            msg_type = getattr(msg, "type", None) or getattr(msg, "role", None)
+                            if isinstance(msg, dict):
+                                msg_type = msg.get("type") or msg.get("role")
 
-                # Token streaming events (LangChain chat model streaming)
-                if "on_chat_model_stream" in event or event.endswith(".on_chat_model_stream"):
-                    part_text = ""
-                    d = data
-                    if isinstance(d, dict):
-                        if "chunk" in d:
-                            ch = d["chunk"]
-                            part_text = getattr(ch, "content", None) or ""
-                            if not isinstance(part_text, str):
-                                part_text = str(part_text)
-                        elif "delta" in d:
-                            delta = d["delta"]
-                            part_text = getattr(delta, "content", None) or ""
-                            if not isinstance(part_text, str):
-                                part_text = str(part_text)
-                        elif "content" in d and isinstance(d["content"], str):
-                            part_text = d["content"]
-                    else:
-                        part_text = getattr(d, "content", "")
+                            # Track tools
+                            if msg_type == "ai" or msg_type == "assistant":
+                                tool_calls = getattr(msg, "tool_calls", None) if hasattr(msg, "tool_calls") else (msg.get("tool_calls") if isinstance(msg, dict) else None)
+                                if tool_calls and isinstance(tool_calls, list):
+                                    for tool_call in tool_calls:
+                                        tool_name = getattr(tool_call, "name", None) if hasattr(tool_call, "name") else (tool_call.get("name") if isinstance(tool_call, dict) else None)
+                                        if tool_name:
+                                            self._tools_seen.add(tool_name)
+                                            logger.debug(f"[LangGraph] Tool call detected: {tool_name}")
+                        
+                        # Get the last message
+                        last_msg = messages[-1]
+                        msg_type = getattr(last_msg, "type", None) or getattr(last_msg, "role", None)
+                        if isinstance(last_msg, dict):
+                            msg_type = last_msg.get("type") or last_msg.get("role")
+                        
+                        # Only stream if it's an assistant message with actual content
+                        if msg_type in ("ai", "assistant"):
+                            content = getattr(last_msg, "content", "") if hasattr(last_msg, "content") else (last_msg.get("content", "") if isinstance(last_msg, dict) else "")
+                            
+                            if isinstance(content, str) and content.strip():
+                                # Skip internal processing messages (ones with tool calls or short status messages)
+                                tool_calls = getattr(last_msg, "tool_calls", None) if hasattr(last_msg, "tool_calls") else (last_msg.get("tool_calls") if isinstance(last_msg, dict) else None)
+                                has_tool_calls = tool_calls and isinstance(tool_calls, list) and len(tool_calls) > 0
+                                
+                                # Only stream if:
+                                # 1. No active tool calls (we're past internal processing)
+                                # 2. Content has changed
+                                # 3. We've seen tools (so we're past initial processing) OR content is substantial
+                                is_substantial = len(content) > 20 or len(self._tools_seen) > 0
+                                
+                                logger.debug(f"[LangGraph] Checking: has_tool_calls={has_tool_calls}, content_len={len(content)}, is_substantial={is_substantial}, changed={content != self._last_content}")
 
-                    if part_text:
-                        if not self._outer_open:
-                            await self.push_frame(LLMFullResponseStartFrame())
-                            self._outer_open = True
-                            self._emitted_texts.clear()
-                        if part_text not in self._emitted_texts:
-                            self._emitted_texts.add(part_text)
-                            await self.push_frame(LLMTextFrame(_tts_sanitize(part_text)))
+                                if not has_tool_calls and content != self._last_content and is_substantial:
+                                    # Open response if not already open
+                                    if not self._outer_open:
+                                        logger.info(f"[LangGraph] ✅ Starting to stream final response...")
+                                        await self.push_frame(LLMFullResponseStartFrame())
+                                        self._outer_open = True
+                                        self._emitted_texts.clear()
+                                        self._last_content = ""
+                                    
+                                    # Calculate delta (only new text since last update)
+                                    if len(content) > len(self._last_content):
+                                        delta = content[len(self._last_content):]
+                                        self._last_content = content
+                                        
+                                        # Emit only the NEW text (delta)
+                                        await self.push_frame(LLMTextFrame(_tts_sanitize(delta)))
+                                        logger.info(f"[LangGraph] 📝 Streamed delta ({len(delta)} chars): '{delta[:80]}...'")
 
-                # Final value-style events (values mode)
+                # Fallback: Handle 'values' mode for non-streaming responses
                 if event == "values":
-                    # For Functional API entrypoints, data is the return value
-                    # Our simple_agent returns {"messages": [...]}
-                    logger.info(f"[LangGraph] Processing 'values' event, data: {type(data).__name__}")
-                    final_text = ""
+                    logger.info(f"[LangGraph] 📦 Processing 'values' event, data type: {type(data).__name__}")
+                    content_to_emit = None
+                    
                     if isinstance(data, dict):
                         logger.info(f"[LangGraph] Dict keys: {list(data.keys())}")
-                        # Check if it's our agent's response format
+                        
+                        # Pattern 1: Functional API - data is {"messages": [...]}
                         msgs = data.get("messages")
                         if isinstance(msgs, list) and msgs:
-                            logger.info(f"[LangGraph] Found {len(msgs)} messages")
-                            # Get the last assistant message
+                            logger.info(f"[LangGraph] Functional API pattern - found {len(msgs)} messages")
                             last_msg = msgs[-1]
                             if isinstance(last_msg, dict):
+                                role = last_msg.get("role") or last_msg.get("type")
                                 content = last_msg.get("content", "")
-                                logger.info(f"[LangGraph] Last message content: '{content[:100]}...'")
-                                if isinstance(content, str):
-                                    final_text = content
-                        # Fallback: direct content field
-                        if not final_text:
-                            c = data.get("content")
-                            if isinstance(c, str):
-                                final_text = c
-                    elif hasattr(data, "content") and isinstance(getattr(data, "content"), str):
-                        final_text = getattr(data, "content")
+                                if role in ("assistant", "ai") and isinstance(content, str) and content.strip():
+                                    content_to_emit = content
+                                    logger.info(f"[LangGraph] Extracted content from Functional API: '{content[:100]}...'")
+                        
+                        # Pattern 2: React API - data is an AIMessage object (dict with 'content' key)
+                        elif "content" in data and "type" in data:
+                            msg_type = data.get("type")
+                            content = data.get("content", "")
+                            logger.info(f"[LangGraph] React API pattern - type={msg_type}, content_len={len(content) if isinstance(content, str) else 'N/A'}")
+                            if msg_type in ("ai", "AIMessage") and isinstance(content, str) and content.strip():
+                                content_to_emit = content
+                                logger.info(f"[LangGraph] Extracted content from React API: '{content[:100]}...'")
                     
-                    logger.info(f"[LangGraph] Extracted final_text: '{final_text[:100] if final_text else None}...'")
-                    if final_text:
-                        # Close backchannel utterance if open
-                        if self._outer_open:
-                            await self.push_frame(LLMFullResponseEndFrame())
-                            self._outer_open = False
-                            self._emitted_texts.clear()
-                        # Emit final explanation as its own message
+                    # Emit the content if we found any
+                    if content_to_emit and content_to_emit != self._last_content:
+                        self._last_content = content_to_emit
+                        logger.info(f"[LangGraph] 🎯 Emitting response via frames...")
                         await self.push_frame(LLMFullResponseStartFrame())
-                        await self.push_frame(LLMTextFrame(_tts_sanitize(final_text)))
+                        await self.push_frame(LLMTextFrame(_tts_sanitize(content_to_emit)))
                         await self.push_frame(LLMFullResponseEndFrame())
+                        logger.info(f"[LangGraph] ✅ Emitted final response (values mode, {len(content_to_emit)} chars)")
+                    elif content_to_emit == self._last_content:
+                        logger.info(f"[LangGraph] ⚠️ Skipping emission: already sent this content")
+                    else:
+                        logger.info(f"[LangGraph] ⚠️ No content extracted from values event")
 
-                # Messages mode: look for an array of messages
-                if event == "messages" or event.endswith(":messages"):
-                    try:
-                        msgs = None
-                        if isinstance(data, dict):
-                            msgs = data.get("messages") or data.get("result") or data.get("value")
-                        elif hasattr(data, "messages"):
-                            msgs = getattr(data, "messages")
-                        if isinstance(msgs, list) and msgs:
-                            last = msgs[-1]
-                            content = getattr(last, "content", None)
-                            if content is None and isinstance(last, dict):
-                                content = last.get("content")
-                            if isinstance(content, str) and content:
-                                if not self._outer_open:
-                                    await self.push_frame(LLMFullResponseStartFrame())
-                                    self._outer_open = True
-                                    self._emitted_texts.clear()
-                                if content not in self._emitted_texts:
-                                    self._emitted_texts.add(content)
-                                    await self.push_frame(LLMTextFrame(_tts_sanitize(content)))
-                    except Exception as exc:  # noqa: BLE001
-                        logger.debug(f"LangGraph messages parsing error: {exc}")
-                # If payload is a plain string, emit it
-                if isinstance(data, str):
+                # Handle plain string responses (edge case)
+                if isinstance(data, str) and data.strip():
                     txt = data.strip()
-                    if txt:
+                    if txt != self._last_content:
+                        self._last_content = txt
                         if not self._outer_open:
                             await self.push_frame(LLMFullResponseStartFrame())
                             self._outer_open = True
-                            self._emitted_texts.clear()
-                        if txt not in self._emitted_texts:
-                            self._emitted_texts.add(txt)
                             await self.push_frame(LLMTextFrame(_tts_sanitize(txt)))
         except Exception as exc:  # noqa: BLE001
             logger.error(f"LangGraph stream error: {exc}", exc_info=True)
-        
-        logger.info(f"[LangGraph] Stream completed")
+        finally:
+            # Close the response if it was opened
+            if self._outer_open:
+                await self.push_frame(LLMFullResponseEndFrame())
+                self._outer_open = False
+                logger.info(f"[LangGraph] Stream completed, emitted {len(self._last_content)} total chars")
 
     async def _process_context_and_frames(self, context: OpenAILLMContext) -> None:
         """Adapter entrypoint: push start/end frames and stream tokens."""

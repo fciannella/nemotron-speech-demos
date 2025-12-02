@@ -1,0 +1,6 @@
+{
+  "DOMESTIC": {"cutoff_local": "17:00", "eta_hours": [2, 24]},
+  "INTERNATIONAL": {"cutoff_local": "15:00", "eta_hours": [24, 72]}
+}
+
+

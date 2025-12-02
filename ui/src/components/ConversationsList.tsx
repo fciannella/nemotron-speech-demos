@@ -1,6 +1,7 @@
 interface Conversation {
   id: string;
   name: string;
+  description?: string;
   lastMessage?: string;
   unread?: number;
 }
@@ -27,7 +28,7 @@ export function ConversationsList({ conversations, selectedId, onSelect }: Conve
               selectedId === conv.id ? 'bg-gray-100 dark:bg-gray-800' : ''
             }`}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-1">
               <h3 className="font-medium text-gray-900 dark:text-white text-sm">
                 {conv.name}
               </h3>
@@ -37,8 +38,13 @@ export function ConversationsList({ conversations, selectedId, onSelect }: Conve
                 </span>
               )}
             </div>
+            {conv.description && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                {conv.description}
+              </p>
+            )}
             {conv.lastMessage && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
+              <p className="text-xs text-gray-400 dark:text-gray-500 truncate italic">
                 {conv.lastMessage}
               </p>
             )}

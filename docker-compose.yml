@@ -29,19 +29,27 @@ services:
       # NVIDIA Riva STT Configuration
       - NVIDIA_ASR_FUNCTION_ID=${NVIDIA_ASR_FUNCTION_ID}
       - RIVA_ASR_MODEL=${RIVA_ASR_MODEL:-parakeet-1.1b-en-US-asr-streaming-silero-vad-asr-bls-ensemble}
+      # Mandarin-specific ASR endpoint (used when zh-CN selected in language-specific mode)
+      - NVIDIA_ASR_MANDARIN_FUNCTION_ID=${NVIDIA_ASR_MANDARIN_FUNCTION_ID:-}
+      - NVIDIA_RIVA_MANDARIN_API_KEY=${NVIDIA_RIVA_MANDARIN_API_KEY:-}
       - RIVA_ASR_LANGUAGE=${RIVA_ASR_LANGUAGE:-en-US}
       - LOG_DETECTED_LANGUAGE=${LOG_DETECTED_LANGUAGE:-true}
       - VALIDATE_LANGUAGE_WITH_TEXT=${VALIDATE_LANGUAGE_WITH_TEXT:-true}
       - RIVA_ASR_AUTO_PUNCTUATION=${RIVA_ASR_AUTO_PUNCTUATION:-true}
       - RIVA_ASR_PROFANITY_FILTER=${RIVA_ASR_PROFANITY_FILTER:-false}
-      - RIVA_ASR_CUSTOM_CONFIG=${RIVA_ASR_CUSTOM_CONFIG:-}
+      # Disable Riva VAD endpointing to prevent cutoffs - let Silero handle it
+      - RIVA_ASR_CUSTOM_CONFIG=${RIVA_ASR_CUSTOM_CONFIG:-enable_vad_endpointing:false,apply_partial_itn:true}
       
       # NVIDIA Riva TTS Configuration
       - NVIDIA_TTS_FUNCTION_ID=${NVIDIA_TTS_FUNCTION_ID}
       - RIVA_TTS_MODEL=${RIVA_TTS_MODEL:-magpie-tts-multilingual}
-      - RIVA_TTS_VOICE_ID=${RIVA_TTS_VOICE_ID:-Magpie-Multilingual.EN-US.Mia.Neutral}
+      # RIVA_TTS_VOICE_ID - Commented out to allow auto-selection based on language
+      # If you want to force a specific voice, set this in .env file
+      # - RIVA_TTS_VOICE_ID=${RIVA_TTS_VOICE_ID:-Magpie-Multilingual.EN-US.Mia.Neutral}
       - RIVA_TTS_LANGUAGE=${RIVA_TTS_LANGUAGE:-en-US}
       - RIVA_TTS_QUALITY=${RIVA_TTS_QUALITY:-20}
+      # TTS Output Gain: 1.0=no change, 1.5=50% louder, 2.0=100% louder
+      - TTS_OUTPUT_GAIN=${TTS_OUTPUT_GAIN:-1.5}
       
       # Audio Configuration
       - AUDIO_SAMPLE_RATE=${AUDIO_SAMPLE_RATE:-16000}
@@ -71,6 +79,8 @@ services:
     build:
       context: ./ui
       dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:7860}
     container_name: pipecat-ui
     ports:
       - "80:80"
@@ -94,11 +104,33 @@ services:
     container_name: langgraph-agents
     ports:
       - "8124:2024"
+    volumes:
+      # Persist agent data (call database, etc.)
+      - agent_data:/app/data
     environment:
+      # LLM Configuration
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
       - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
       - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-pipecat-agents}
+      
+      # Twilio Configuration (for claims investigation agent)
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+      
+      # Server URL for Twilio callbacks (where your Twilio bot server runs)
+      - SERVER_URL=${SERVER_URL:-http://localhost:7861}
+      
+      # Claims Investigation Agent Configuration
+      - CLAIMS_LANGGRAPH_URL=${CLAIMS_LANGGRAPH_URL:-http://localhost:2024}
+      - CLAIMS_DEFAULT_ASSISTANT=${CLAIMS_DEFAULT_ASSISTANT:-fraud-notification-agent}
+      
+      # Database Configuration (PostgreSQL for shared access, SQLite fallback)
+      - DATABASE_URL=${DATABASE_URL:-}
+      
+      # Wire Transfer Security
+      - WIRE_TRANSFER_STRICT_VERIFICATION=${WIRE_TRANSFER_STRICT_VERIFICATION:-false}
     networks:
       - app-network
     restart: unless-stopped
@@ -113,3 +145,7 @@ networks:
   app-network:
     driver: bridge
 
+volumes:
+  # Persistent storage for agent data
+  agent_data:
+    driver: local

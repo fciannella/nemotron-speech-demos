@@ -1,0 +1,48 @@
+{
+  "CHK": [
+    {
+      "id": "CHK_LITE",
+      "name": "Chequing Lite",
+      "monthly_fee": 5.0,
+      "waives": ["MAINTENANCE"],
+      "reduces": {},
+      "notes": "Waives monthly maintenance only at a low monthly cost."
+    },
+    {
+      "id": "CHK_PLUS",
+      "name": "Chequing Plus",
+      "monthly_fee": 15.0,
+      "waives": ["MAINTENANCE", "PAPER_STATEMENT"],
+      "reduces": {"OVERDRAFT": 0.5},
+      "notes": "Waives monthly maintenance and paper statements; halves overdraft fee."
+    },
+    {
+      "id": "CHK_PREMIER",
+      "name": "Chequing Premier",
+      "monthly_fee": 25.0,
+      "waives": ["MAINTENANCE", "PAPER_STATEMENT", "WIRE_OUT", "FX_FEE"],
+      "reduces": {"OVERDRAFT": 0.0},
+      "notes": "Waives maintenance, paper, outgoing wires, FX fees; overdraft fee waived."
+    }
+  ],
+  "SAV": [
+    {
+      "id": "SAV_ESSENTIALS",
+      "name": "Savings Essentials",
+      "monthly_fee": 4.0,
+      "waives": ["EXCESS_WITHDRAWAL"],
+      "reduces": {"INACTIVE_ACCOUNT": 0.0},
+      "notes": "Waives excess withdrawal and inactivity fees at a budget price."
+    },
+    {
+      "id": "SAV_PLUS",
+      "name": "Savings Plus",
+      "monthly_fee": 5.0,
+      "waives": ["EXCESS_WITHDRAWAL", "INACTIVE_ACCOUNT"],
+      "reduces": {"ATM": 0.0},
+      "notes": "Waives excess withdrawal and inactivity; ATM fee waived at network ATMs."
+    }
+  ]
+}
+
+

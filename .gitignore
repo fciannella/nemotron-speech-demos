@@ -122,7 +122,11 @@ audio_contexts/
 .venv/
 tests/
 
+.langgraph_api/
 # uv lock files (uncomment if you don't want to track these)
 # uv.lock
+
+
+
 
 

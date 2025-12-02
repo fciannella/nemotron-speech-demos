@@ -1,7 +1,12 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "simple_agent": "./simple_agent.py:simple_agent"
+    "simple_agent": "./simple_agent.py:simple_agent",
+    "wire_transfer_agent": "./wire-transfer-agent/react_agent.py:agent",
+    "claims_investigation_agent": "./claims-investigation-agent/claims_agent.py:agent",
+    "telco_agent": "./telco-agent/react_agent.py:agent",
+    "rbc_fees_agent": "./rbc-fees-agent/react_agent.py:agent",
+    "healthcare_agent": "./healthcare-agent/react_agent.py:agent"
   },
   "env": ".env"
 }

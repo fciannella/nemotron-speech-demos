@@ -1,0 +1,22 @@
+{
+  "CHK": {
+    "fees": [
+      {"code": "NSF", "name": "Non-sufficient funds fee", "amount": 12.50, "policy": "Applied when payment is attempted without sufficient balance."},
+      {"code": "MAINTENANCE", "name": "Monthly maintenance fee", "amount": 10.00, "policy": "Monthly account fee depending on plan."},
+      {"code": "OVERDRAFT", "name": "Overdraft fee", "amount": 15.00, "policy": "Applied when your account balance goes below zero."},
+      {"code": "WIRE_OUT", "name": "Outgoing wire transfer fee", "amount": 20.00, "policy": "Charged for outgoing domestic or international wire transfers."},
+      {"code": "FX_FEE", "name": "Foreign exchange fee", "amount": 2.75, "policy": "Percentage-equivalent flat fee for non-local currency transactions."},
+      {"code": "PAPER_STATEMENT", "name": "Paper statement fee", "amount": 2.00, "policy": "Charged when paper statements are requested instead of e-statements."},
+      {"code": "STOP_PAYMENT", "name": "Stop payment fee", "amount": 15.00, "policy": "Charged for placing a stop payment request."}
+    ]
+  },
+  "SAV": {
+    "fees": [
+      {"code": "ATM", "name": "ATM withdrawal fee", "amount": 3.00, "policy": "Certain ATM withdrawals incur a fee."},
+      {"code": "EXCESS_WITHDRAWAL", "name": "Excess withdrawal fee", "amount": 5.00, "policy": "Charged when monthly withdrawal limit is exceeded."},
+      {"code": "INACTIVE_ACCOUNT", "name": "Inactive account fee", "amount": 3.50, "policy": "Charged for prolonged inactivity on a savings account."}
+    ]
+  }
+}
+
+

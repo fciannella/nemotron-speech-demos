@@ -5,10 +5,13 @@ interface VoiceControlsFooterProps {
   connectionState: ConnectionState;
   isMuted: boolean;
   selectedLanguage: Language;
+  languageMode: 'multi' | 'specific';
+  onLanguageModeChange: (mode: 'multi' | 'specific') => void;
   onLanguageChange: (language: Language) => void;
   onConnect: () => void;
   onDisconnect: () => void;
   onToggleMute: () => void;
+  showLanguageModeToggle: boolean;
   showLanguageSelector: boolean;
 }
 
@@ -16,10 +19,13 @@ export function VoiceControlsFooter({
   connectionState,
   isMuted,
   selectedLanguage,
+  languageMode,
+  onLanguageModeChange,
   onLanguageChange,
   onConnect,
   onDisconnect,
   onToggleMute,
+  showLanguageModeToggle,
   showLanguageSelector,
 }: VoiceControlsFooterProps) {
   const { isConnected, isConnecting } = connectionState;
@@ -37,7 +43,33 @@ export function VoiceControlsFooter({
       <div className="flex items-center justify-center gap-4">
         {!isConnected ? (
           <>
-            {/* Language Selector - only show for language-specific conversation */}
+            {/* Language Mode Toggle - For specialized agents (wire-transfer, claims-investigation, telco-agent) */}
+            {showLanguageModeToggle && (
+              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-full p-1">
+                <button
+                  onClick={() => onLanguageModeChange('multi')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                    languageMode === 'multi'
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  🌐 Multi
+                </button>
+                <button
+                  onClick={() => onLanguageModeChange('specific')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                    languageMode === 'specific'
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  🗣️ Specific
+                </button>
+              </div>
+            )}
+            
+            {/* Language Selector - for specialized agents (specific mode) and language-specific conversation */}
             {showLanguageSelector && (
               <LanguageSelector
                 selectedLanguage={selectedLanguage}
@@ -83,7 +115,7 @@ export function VoiceControlsFooter({
 
             <button
               onClick={onDisconnect}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-full transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border-2 border-gray-300 dark:border-gray-600 font-medium rounded-full transition-colors flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

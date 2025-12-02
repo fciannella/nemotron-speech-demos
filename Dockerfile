@@ -38,7 +38,8 @@ COPY requirements.txt .
 # Install Python dependencies
 # Note: The pipecat package is installed from local directory with extras
 COPY pipecat/ ./pipecat/
-RUN pip install --no-cache-dir -r requirements.txt
+# RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Copy application code
 COPY pipeline_modern.py .

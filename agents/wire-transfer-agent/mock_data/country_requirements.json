@@ -1,0 +1,11 @@
+{
+  "US": ["routing_number", "account_number", "account_name"],
+  "CA": ["institution_number", "transit_number", "account_number", "account_name"],
+  "GB": ["sort_code", "account_number", "account_name"],
+  "EU": ["iban", "account_name"],
+  "MX": ["clabe", "account_name"],
+  "IN": ["ifsc", "account_number", "account_name"],
+  "RU": ["account_number", "account_name"]
+}
+
+

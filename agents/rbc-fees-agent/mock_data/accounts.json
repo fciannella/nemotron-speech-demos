@@ -1,0 +1,120 @@
+{
+  "customers": {
+    "cust_test": {
+      "profile": {
+        "first_name": "Francesco",
+        "last_name": "Ciannella",
+        "dob": "1990-01-01",
+        "secret_question": "What is your favorite color?",
+        "secret_answer": "blue"
+      },
+      "accounts": [
+        {
+          "account_id": "A-CHK-001",
+          "product_type": "CHK",
+          "nickname": "Everyday Chequing",
+          "account_number": "6001"
+        },
+        {
+          "account_id": "A-SAV-001",
+          "product_type": "SAV",
+          "nickname": "High Interest Savings",
+          "account_number": "7182"
+        }
+      ]
+    },
+    "cust_alice": {
+      "profile": {
+        "first_name": "Alice",
+        "last_name": "Stone",
+        "dob": "1985-05-12",
+        "secret_question": "Favorite color?",
+        "secret_answer": "green"
+      },
+      "accounts": [
+        {
+          "account_id": "A-CHK-101",
+          "product_type": "CHK",
+          "nickname": "Everyday Chequing",
+          "account_number": "1101"
+        },
+        {
+          "account_id": "A-SAV-101",
+          "product_type": "SAV",
+          "nickname": "High Interest Savings",
+          "account_number": "7101"
+        }
+      ]
+    },
+    "cust_bob": {
+      "profile": {
+        "first_name": "Bob",
+        "last_name": "Rivera",
+        "dob": "1978-11-30",
+        "secret_question": "Favorite color?",
+        "secret_answer": "red"
+      },
+      "accounts": [
+        {
+          "account_id": "A-CHK-202",
+          "product_type": "CHK",
+          "nickname": "Primary Chequing",
+          "account_number": "1202"
+        }
+      ]
+    },
+    "cust_carla": {
+      "profile": {
+        "first_name": "Carla",
+        "last_name": "Nguyen",
+        "dob": "1992-03-14",
+        "secret_question": "Favorite color?",
+        "secret_answer": "blue"
+      },
+      "accounts": [
+        {
+          "account_id": "A-SAV-303",
+          "product_type": "SAV",
+          "nickname": "Savings",
+          "account_number": "7303"
+        }
+      ]
+    },
+    "cust_dave": {
+      "profile": {
+        "first_name": "David",
+        "last_name": "Patel",
+        "dob": "1989-07-21",
+        "secret_question": "Favorite animal?",
+        "secret_answer": "tiger"
+      },
+      "accounts": [
+        {
+          "account_id": "A-CHK-404",
+          "product_type": "CHK",
+          "nickname": "Everyday Chequing",
+          "account_number": "1404"
+        }
+      ]
+    },
+    "cust_eve": {
+      "profile": {
+        "first_name": "Evelyn",
+        "last_name": "Moore",
+        "dob": "1995-09-09",
+        "secret_question": "Favorite season?",
+        "secret_answer": "summer"
+      },
+      "accounts": [
+        {
+          "account_id": "A-SAV-505",
+          "product_type": "SAV",
+          "nickname": "High Interest Savings",
+          "account_number": "7505"
+        }
+      ]
+    }
+  }
+}
+
+

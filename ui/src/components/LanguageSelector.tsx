@@ -13,6 +13,7 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'de-DE', name: 'German', flag: '🇩🇪' },
   { code: 'fr-FR', name: 'French', flag: '🇫🇷' },
   { code: 'zh-CN', name: 'Chinese (Mandarin)', flag: '🇨🇳' },
+  // Note: Chinese uses a separate Mandarin-specific ASR endpoint (NVIDIA_ASR_MANDARIN_FUNCTION_ID)
 ];
 
 export function LanguageSelector({ 

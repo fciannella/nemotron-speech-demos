@@ -1,0 +1,11 @@
+{
+  "FX_MARGINS_BPS": 150,
+  "WIRE_PLANS": [
+    {"id": "WIRE_BASIC", "name": "Wire Basic", "monthly_fee": 0.0, "notes": "Pay per transfer; standard fees apply."},
+    {"id": "WIRE_PLUS", "name": "Wire Plus", "monthly_fee": 15.0, "waives": ["DOMESTIC_BASE"], "reduces": {"INTERNATIONAL_BASE": 0.5}, "notes": "Domestic base fee waived; 50% off international base fee."},
+    {"id": "WIRE_PREMIER", "name": "Wire Premier", "monthly_fee": 30.0, "waives": ["DOMESTIC_BASE", "INTERNATIONAL_BASE", "SWIFT"], "reduces": {"CORRESPONDENT": 0.5}, "notes": "Waives base fees; cuts correspondent 50%; great for frequent senders."}
+  ],
+  "DEFAULTS": {"domestic_base": 15.0, "international_base": 25.0, "swift": 5.0, "correspondent": 10.0, "lifting": 5.0}
+}
+
+

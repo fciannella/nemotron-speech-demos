@@ -1,0 +1,12 @@
+{
+  "pairs": [
+    {"from": "USD", "to": "EUR", "mid_rate": 0.92, "margin_bps": 150, "updated_at": "2025-08-25T12:00:00Z"},
+    {"from": "USD", "to": "CAD", "mid_rate": 1.32, "margin_bps": 120, "updated_at": "2025-08-25T12:00:00Z"},
+    {"from": "CAD", "to": "USD", "mid_rate": 0.76, "margin_bps": 120, "updated_at": "2025-08-25T12:00:00Z"},
+    {"from": "CAD", "to": "GBP", "mid_rate": 0.58, "margin_bps": 160, "updated_at": "2025-08-25T12:00:00Z"},
+    {"from": "USD", "to": "RUB", "mid_rate": 90.0, "margin_bps": 200, "updated_at": "2025-08-25T12:00:00Z"},
+    {"from": "RUB", "to": "USD", "mid_rate": 0.011111, "margin_bps": 200, "updated_at": "2025-08-25T12:00:00Z"}
+  ]
+}
+
+

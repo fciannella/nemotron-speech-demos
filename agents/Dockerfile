@@ -24,7 +24,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy agent code and configuration
 COPY simple_agent.py .
+COPY wire-transfer-agent/ ./wire-transfer-agent/
+COPY claims-investigation-agent/ ./claims-investigation-agent/
+COPY telco-agent/ ./telco-agent/
+COPY rbc-fees-agent/ ./rbc-fees-agent/
+COPY healthcare-agent/ ./healthcare-agent/
 COPY langgraph.json .
+
+# Create data directory for persistent storage
+RUN mkdir -p /app/data
 
 # Expose LangGraph dev server port (default: 2024)
 EXPOSE 2024
