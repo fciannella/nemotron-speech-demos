@@ -199,7 +199,7 @@ export function ArchitecturePage({ onClose }: ArchitecturePageProps) {
 
               {/* WebRTC to Pipecat */}
               <path
-                d="M 350 200 L 450 200"
+                d="M 350 200 L 400 200"
                 fill="none"
                 stroke={activeComponent === 'webrtc' || activeComponent === 'pipecat' ? '#76B900' : '#333'}
                 strokeWidth="3"
@@ -439,15 +439,6 @@ export function ArchitecturePage({ onClose }: ArchitecturePageProps) {
                 </g>
               </g>
 
-              {/* Data Flow Labels */}
-              <g fill="#666" fontSize="9">
-                <text x="175" y="140">Audio</text>
-                <text x="385" y="190">Frames</text>
-                <text x="520" y="95">Text</text>
-                <text x="520" y="310">Audio</text>
-                <text x="640" y="190">Messages</text>
-                <text x="820" y="340">Routes</text>
-              </g>
 
               {/* Legend */}
               <g transform="translate(30, 620)">

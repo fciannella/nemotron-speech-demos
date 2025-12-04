@@ -62,7 +62,6 @@ rsync -avz --progress \
   --exclude='.vscode/' \
   --exclude='*.iml' \
   --exclude='*.iws' \
-  --exclude='.env' \
   --exclude='.env.local' \
   --exclude='.env.*.local' \
   --exclude='*.log' \
