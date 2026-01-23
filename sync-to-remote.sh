@@ -6,8 +6,8 @@
 set -e
 
 # Configuration
-REMOTE_SERVER="nvidia@192.168.50.241"
-REMOTE_DIR="/home/nvidia/src/pipecat-nemotron-demos"
+REMOTE_SERVER="nvidia@10.110.96.94"
+REMOTE_DIR="/home/nvidia/nemotron-speech-demos"
 LOCAL_DIR="/home/fciannella/PycharmProjects/pipecat-nemotron-demos"
 
 echo "=========================================="

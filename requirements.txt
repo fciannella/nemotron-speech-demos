@@ -29,6 +29,9 @@ langdetect>=1.0.9
 # NLTK for text processing (required by RTVI/TTS for sentence tokenization)
 nltk>=3.9.1
 
+# Twilio for TURN server credentials (WebRTC NAT traversal)
+twilio
+
 
 
 

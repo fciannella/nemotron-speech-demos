@@ -1366,12 +1366,15 @@ async def api_offer_patch(request: dict):
     This allows the client to send additional ICE candidates after the initial connection.
     
     Args:
-        request: Dict with pc_id and candidate information
+        request: Dict with pc_id and candidate/candidates information
         
     Returns:
         Success response
     """
     pc_id = request.get("pc_id")
+    
+    # Log what we received for debugging
+    logger.info(f"📥 PATCH /api/offer - keys: {list(request.keys())}, pc_id: {pc_id}")
     
     if not pc_id or pc_id not in pcs_map:
         logger.warning(f"PATCH request for unknown pc_id: {pc_id}")
@@ -1379,14 +1382,29 @@ async def api_offer_patch(request: dict):
     
     pipecat_connection = pcs_map[pc_id]
     
-    # Handle ICE candidate if provided
+    # Handle ICE candidates (plural - array of candidates)
+    if "candidates" in request:
+        candidates = request["candidates"]
+        if isinstance(candidates, list):
+            logger.info(f"🧊 Received {len(candidates)} ICE candidates for {pc_id}")
+            for i, candidate in enumerate(candidates):
+                logger.info(f"   Candidate {i} raw: {candidate}")
+                if candidate:
+                    candidate_str = candidate.get("candidate", "") if isinstance(candidate, dict) else ""
+                    if candidate_str:
+                        logger.info(f"   Adding: {candidate_str[:60]}...")
+                        await pipecat_connection.add_ice_candidate(candidate)
+    
+    # Handle single ICE candidate (for compatibility)
     if "candidate" in request:
-        logger.debug(f"Adding ICE candidate for pc_id: {pc_id}")
-        await pipecat_connection.add_ice_candidate(request["candidate"])
+        candidate = request["candidate"]
+        candidate_str = candidate.get("candidate", "") if candidate else ""
+        logger.info(f"🧊 ICE candidate received for {pc_id}: {candidate_str[:80] if candidate_str else 'empty'}")
+        await pipecat_connection.add_ice_candidate(candidate)
     
     # Handle renegotiation if SDP provided
     if "sdp" in request:
-        logger.debug(f"Renegotiating connection for pc_id: {pc_id}")
+        logger.info(f"🔄 Renegotiating connection for pc_id: {pc_id}")
         await pipecat_connection.renegotiate(
             sdp=request["sdp"],
             type=request.get("type", "offer"),
